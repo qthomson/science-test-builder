@@ -155,6 +155,9 @@
   .dialog .actions { display: flex; gap: 10px; margin-top: 14px; align-items: center; }
   .dialog .actions .spacer { flex: 1; }
   button.danger { color: #8b1a1a; border-color: #e0b7bb; background: #fdeef0; }
+  .libtable { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .libtable th, .libtable td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  .libtable th { color: var(--soft); font-weight: normal; font-size: 12px; }
   #progress { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--maroon-deep); color: #fff; padding: 10px 18px;
               border-radius: 999px; font-size: 13px; z-index: 60; box-shadow: 0 4px 16px rgba(0,0,0,.25); }
   #progress[hidden] { display: none; }
@@ -174,7 +177,7 @@
 <header>
   <div class="badge" title="Orchard Park CSD — Science">OP</div>
   <h1>Chemistry test builder</h1>
-  <span class="sub" id="bankinfo"></span>
+  <span class="sub" id="bankinfo"></span><span class="sub" id="whoami" style="margin-left:8px;opacity:1;font-weight:bold"></span>
   <span class="spacer"></span>
   <button id="btnNew" title="Write your own multiple-choice question and add it to the bank">New question…</button>
   <button id="btnSave" title="Download this worksheet (question list, breaks, inserted pages and settings) so you can reopen it later">Save list…</button>
@@ -238,6 +241,22 @@
   </div>
 </div>
 
+<div id="lib" class="modal" hidden>
+  <div class="dialog" style="width:min(820px,96vw)">
+    <h2>Department worksheets</h2>
+    <div class="hint" id="libHint">Everything saved by the department. Open one to keep working on it, or start from a copy.</div>
+    <div id="libList" style="max-height:60vh;overflow:auto;margin-top:10px"></div>
+    <div class="actions"><button id="libImport">Import a file…</button><span class="spacer"></span><button id="libClose">Close</button></div>
+  </div>
+</div>
+<div id="savedlg" class="modal" hidden>
+  <div class="dialog narrow">
+    <h2>Save worksheet</h2>
+    <div class="row"><label style="width:60px">Title</label><input type="text" id="svTitle" style="flex:1"></div>
+    <div class="hint" id="svHint" style="margin:6px 0 10px"></div>
+    <div class="actions"><button id="svExport">Export a file…</button><span class="spacer"></span><button id="svCancel">Cancel</button><button id="svNew">Save as new</button><button id="svUpdate" class="primary">Save</button></div>
+  </div>
+</div>
 <div id="dl" class="modal" hidden>
   <div class="dialog narrow">
     <h2>Your PDFs are ready</h2>
@@ -319,6 +338,17 @@
   const B = window.BANK;
   const $ = id => document.getElementById(id);
   if (!B) { $('empty').textContent = 'bank/bank.js not found. Keep this file in the same folder as the "bank" and "lib" folders.'; return; }
+  // ---------- shared mode: this page is served by the Apps Script backend (department library, sign-in, shared questions)
+  const SHARED = !!(window.google && google.script && google.script.run);
+  const call = (fn, ...args) => new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(e => rej(new Error(e.message || String(e))))[fn](...args));
+  let ME = null;
+  if (SHARED) {
+    try {
+      const [me, um, cus] = await Promise.all([call('whoAmI'), call('getUnitMap'), call('listCustom')]);
+      ME = me; window.UNIT_MAP = um || window.UNIT_MAP || null; window.CUSTOM = cus || [];
+      $('whoami').textContent = me.email ? '· ' + me.email : '';
+    } catch (e) { alert('The shared library could not be reached: ' + e.message + '\nYou can keep working; saving will fall back to files.'); }
+  }
   const { PDFDocument, rgb } = window.PDFLib;
   const T = B.types, U = B.units, C = B.clusters || [];
   C.forEach(c => { c.kind = 'cluster'; });
@@ -384,7 +414,7 @@
   function ensureExam(exam) {
     if (!exam) return Promise.resolve();
     if (!loading[exam]) loading[exam] = new Promise((res, rej) => {
-      const s = document.createElement('script'); s.src = exam.startsWith('PSC-') ? `bank-new/data/${exam}.js` : `bank/data/${exam}.js`;
+      const s = document.createElement('script'); s.src = (window.SITE_BASE || '') + (exam.startsWith('PSC-') ? `bank-new/data/${exam}.js` : `bank/data/${exam}.js`);
       s.onload = () => { const d = (window.BANKIMG || {})[exam] || {}; for (const p in d) IMGS[p] = { b64: d[p] }; if (window.BANKIMG) delete window.BANKIMG[exam]; res(); };
       s.onerror = () => rej(new Error(`${exam.startsWith('PSC-') ? 'bank-new' : 'bank'}/data/${exam}.js is missing`));
       document.head.appendChild(s);
@@ -420,7 +450,7 @@
   function loadCustom() {
     const byIdC = {};
     (window.CUSTOM || []).forEach(q => { byIdC[q.id] = q; });
-    try { JSON.parse(localStorage.getItem('ctb.custom') || '[]').forEach(q => { if (!byIdC[q.id] || (q.updated || 0) >= (byIdC[q.id].updated || 0)) byIdC[q.id] = q; }); } catch (e) { }
+    if (!SHARED) { try { JSON.parse(localStorage.getItem('ctb.custom') || '[]').forEach(q => { if (!byIdC[q.id] || (q.updated || 0) >= (byIdC[q.id].updated || 0)) byIdC[q.id] = q; }); } catch (e) { } }
     return Object.values(byIdC).sort((a, b) => (a.created || 0) - (b.created || 0)).map((q, i) => decorate(Object.assign(q, { q: i + 1 })));
   }
   const CUSTOM = loadCustom();
@@ -1117,13 +1147,78 @@
     persist();
   }
 
-  $('btnSave').onclick = () => {
+  let currentWs = null;                       // {id, title} when the worksheet came from / went to the library
+  try { currentWs = JSON.parse(localStorage.getItem('ctb.currentWs') || 'null'); } catch (e) { }
+  const setCurrent = w => { currentWs = w; try { localStorage.setItem('ctb.currentWs', JSON.stringify(w)); } catch (e) { } };
+  const exportFile = () => {
     const data = { title: $('oTitle').value, questions: picked, extras, dropped, options: getOpts(), version: 3 };
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
     a.download = safeName() + '.json'; a.click();
   };
-  $('btnLoad').onclick = () => $('fileLoad').click();
+  const fmtDate = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }); };
+  const short = email => String(email || '').split('@')[0];
+  async function saveToLibrary(asNew) {
+    const title = $('svTitle').value.trim() || 'worksheet'; $('oTitle').value = title;
+    progress('Saving to the department library…');
+    try {
+      const r = await call('saveWorksheet', { id: asNew ? null : (currentWs && currentWs.id) || null, title, questions: picked, extras, dropped, options: getOpts() });
+      setCurrent({ id: r.id, title }); persist(); $('savedlg').hidden = true; progress('Saved.'); setTimeout(() => progress(null), 2000);
+    } catch (e) { progress(null); alert('Could not save: ' + e.message); }
+  }
+  async function openLibrary() {
+    $('libList').innerHTML = '<div class="hint">Loading…</div>'; $('lib').hidden = false;
+    try {
+      const rows = await call('listWorksheets');
+      if (!rows.length) { $('libList').innerHTML = '<div class="hint">Nothing saved yet. Build a worksheet and use Save list….</div>'; return; }
+      $('libList').innerHTML = `<table class="libtable"><tr><th>Title</th><th>Saved by</th><th>Date</th><th>Qs</th><th></th></tr>` +
+        rows.map(r => `<tr><td>${esc(r.title)}</td><td>${esc(short(r.owner))}</td><td>${fmtDate(r.saved)}</td><td>${r.nq}</td><td style="white-space:nowrap"><button class="small primary" data-open="${r.id}">Open</button> <button class="small" data-copy="${r.id}" title="Open as a new copy that saves separately">Copy</button> <button class="small danger" data-del="${r.id}" title="Remove from the library (older versions stay in the sheet)">&#10005;</button></td></tr>`).join('') + `</table>`;
+      $('libList').querySelectorAll('button[data-open],button[data-copy]').forEach(b => b.onclick = async () => {
+        const id = b.dataset.open || b.dataset.copy; progress('Opening…');
+        try { const d = await call('loadWorksheet', id); applyLoaded(d); setCurrent(b.dataset.copy ? null : { id: d.id, title: d.title }); $('lib').hidden = true; }
+        catch (e) { alert('Could not open: ' + e.message); }
+        progress(null);
+      });
+      $('libList').querySelectorAll('button[data-del]').forEach(b => b.onclick = async () => {
+        const r = rows.find(x => x.id === b.dataset.del);
+        if (!confirm(`Remove "${r.title}" from the library?`)) return;
+        try { await call('deleteWorksheet', r.id); if (currentWs && currentWs.id === r.id) setCurrent(null); openLibrary(); } catch (e) { alert('Could not remove: ' + e.message); }
+      });
+    } catch (e) { $('libList').innerHTML = `<div class="hint">${esc(e.message)}</div>`; }
+  }
+  function applyLoaded(d) {
+    extras = d.extras || {}; dropped = d.dropped || {};
+    picked = (d.questions || []).filter(id => byId[id] || extras[id]);
+    if (d.title) $('oTitle').value = d.title;
+    if (d.options) Object.entries(d.options).forEach(([k, v]) => { if (OPTS.includes(k)) setOpt(k, v); else if (k === 'start') setOpt('oStart', v); else if (k === 'scale') setOpt('oScale', v); });
+    const missing = (d.questions || []).length - picked.length;
+    if (missing) alert(`${missing} item(s) in that list are not in this question bank and were skipped.`);
+    persist(); renderList(); renderSheet();
+  }
+  $('libClose').onclick = () => { $('lib').hidden = true; };
+  $('lib').addEventListener('click', e => { if (e.target === $('lib')) $('lib').hidden = true; });
+  $('libImport').onclick = () => { $('lib').hidden = true; $('fileLoad').click(); };
+  $('svCancel').onclick = () => { $('savedlg').hidden = true; };
+  $('savedlg').addEventListener('click', e => { if (e.target === $('savedlg')) $('savedlg').hidden = true; });
+  $('svExport').onclick = () => { $('savedlg').hidden = true; exportFile(); };
+  $('svUpdate').onclick = () => saveToLibrary(false);
+  $('svNew').onclick = () => saveToLibrary(true);
+  $('btnSave').onclick = () => {
+    if (!picked.length) return;
+    if (!SHARED) { exportFile(); return; }
+    $('svTitle').value = $('oTitle').value;
+    const mine = currentWs && currentWs.id;
+    $('svNew').hidden = !mine; $('svUpdate').textContent = mine ? 'Save (new version)' : 'Save to library';
+    $('svHint').textContent = mine ? `This worksheet came from the library ("${currentWs.title}"). Saving keeps its place in the list and its history; "Save as new" starts a separate copy.` : 'Saved worksheets are visible to the whole department, with your name and the date.';
+    $('savedlg').hidden = false; $('svTitle').focus();
+  };
+  const exportFileLegacy = () => {
+    const data = { title: $('oTitle').value, questions: picked, extras, dropped, options: getOpts(), version: 3 };
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
+    a.download = safeName() + '.json'; a.click();
+  };
+  $('btnLoad').onclick = () => { if (SHARED) openLibrary(); else $('fileLoad').click(); };
   $('fileLoad').onchange = e => {
     const f = e.target.files[0]; if (!f) return;
     f.text().then(txt => {
@@ -1134,12 +1229,12 @@
         if (d.options) Object.entries(d.options).forEach(([k, v]) => { if (OPTS.includes(k)) setOpt(k, v); else if (k === 'start') setOpt('oStart', v); else if (k === 'scale') setOpt('oScale', v); });
         const missing = (d.questions || []).length - picked.length;
         if (missing) alert(`${missing} item(s) in that list are not in this question bank and were skipped.`);
-        persist(); renderList(); renderSheet();
+        setCurrent(null); persist(); renderList(); renderSheet();
       } catch (err) { alert('That file is not a saved worksheet list.'); }
     });
     e.target.value = '';
   };
-  $('btnClear').onclick = () => { if (!picked.length || confirm('Remove everything from the worksheet?')) { picked = []; extras = {}; dropped = {}; persist(); renderList(); renderSheet(); } };
+  $('btnClear').onclick = () => { if (!picked.length || confirm('Remove everything from the worksheet?')) { picked = []; extras = {}; dropped = {}; setCurrent(null); persist(); renderList(); renderSheet(); } };
   $('btnPrint').onclick = () => { if (picked.length) window.print(); };
 
   // ---------- PDF output ----------
@@ -1338,7 +1433,8 @@
     $('mTitle').textContent = q ? 'Edit question' : 'New multiple-choice question';
     $('mIntro').value = q ? q.intro || '' : ''; $('mStem').value = q ? q.stem : '';
     ['mC1', 'mC2', 'mC3', 'mC4'].forEach((id, i) => { $(id).value = q ? q.choices[i] : ''; });
-    $('mAns').value = q ? q.answer : 1; $('mWidth').value = q ? q.width : 'half'; $('mAuthor').value = q ? q.author || '' : (localStorage.getItem('ctb.author') || '');
+    $('mAns').value = q ? q.answer : 1; $('mWidth').value = q ? q.width : 'half'; $('mAuthor').value = q ? q.author || '' : (localStorage.getItem('ctb.author') || (ME && ME.email ? ME.email.split('@')[0].replace(/[^a-z]/gi, '').slice(0, 2).toUpperCase() + (ME.email.split('.')[1] || '').charAt(0).toUpperCase() : ''));
+    $('mExport').hidden = SHARED;
     $('mRef').value = q ? (q.ref || 'none') : 'none'; $('mTables').value = q ? (q.tables || []).join(', ') : '';
     mUnit.value = q ? String(q.unit) : 'misc'; fillBuilderTypes(q ? q.type : 'misc');
     $('mDiagram').value = ''; $('mDiagramInfo').textContent = q && q.diagram ? 'Current diagram kept. Choose a file to replace it.' : 'PNG or JPG. It prints centered under the intro line; use a clean, cropped image.';
@@ -1373,10 +1469,12 @@
       if (!picked.includes(nq.id)) picked.push(nq.id);
     }
     saveCustomStore(); persist(); fillExams(); updateInfo(); $('modal').hidden = true; renderList(); renderSheet();
+    if (SHARED) { const target = editing || Q[Q.length - 1]; call('saveCustom', Object.assign({}, q, { id: target.id, author: target.author, created: target.created })).catch(e => alert('Saved in this browser, but not to the shared list: ' + e.message)); }
   };
   $('mDelete').onclick = () => {
     if (!editing || !confirm('Delete this question from your bank?')) return;
     const i = Q.indexOf(editing); if (i >= 0) Q.splice(i, 1);
+    if (SHARED) call('deleteCustom', editing.id).catch(e => alert('Removed here, but not from the shared list: ' + e.message));
     picked = picked.filter(id => id !== editing.id); reindex(); saveCustomStore(); persist(); fillExams();
     $('modal').hidden = true; renderList(); renderSheet();
   };
