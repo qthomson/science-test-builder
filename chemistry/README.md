@@ -3,6 +3,19 @@
 Pick questions from past Physical Setting/Chemistry Regents exams (or write your own), arrange them, and get
 ready-to-print PDFs with answer keys. Nothing to install: it runs in your web browser from this folder.
 
+
+## Where it runs
+
+- **Department web app (recommended):** the Apps Script page opened with a school Google account. Everything is shared:
+  **Save…** and **Open…** use the department library (every save is a new version with your name and the date;
+  Copy opens someone else's worksheet as your own). Each worksheet carries a **Type** (worksheet, practice, quiz, test, lab) and a
+  **Unit** set next to the title, and the Open dialog narrows the list by year made, person, type and unit, custom questions are visible to everyone with the author's name, and the
+  Unit Mapper's **Save for everyone** applies to all copies. The header shows who is signed in.
+- **Website copy:** `https://qthomson.github.io/science-test-builder/chemistry/` runs the same app without sign-in; saving is
+  by file only (Save list… downloads a file, Open list… opens one).
+- **Folder copy:** unzip and double-click; same as the website copy, plus the optional `bank/custom.js` and `bank/unit-map.js`
+  drop-in files.
+
 ## Using it
 
 1. Open **`Chem Test Builder.html`** (double-click). Chrome or Edge work best.
@@ -24,7 +37,7 @@ ready-to-print PDFs with answer keys. Nothing to install: it runs in your web br
    dialog with a **Save** and an **Open** button for each. Some school browsers block automatic downloads from a local page;
    if Save does nothing, use Open and save or print from the PDF viewer. Nothing to set in a print dialog: letter paper,
    half-inch margins, true size. **Print** still prints the on-screen worksheet straight from the browser if you just want paper now.
-7. **Save list…** downloads a small file with your selection, breaks, inserted pages and settings; **Open list…** brings it
+7. **Save…** downloads a small file with your selection, breaks, inserted pages and settings; **Open…** brings it
    back later or on another computer that has this folder. The last worksheet you were building is also remembered in the browser.
 8. **New question…** lets you write your own multiple-choice question: an optional intro line ("Given the particle
    diagram:"), an optional diagram image, the question, four choices, the correct one, half or full width, unit and

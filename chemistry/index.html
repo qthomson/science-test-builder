@@ -180,8 +180,8 @@
   <span class="sub" id="bankinfo"></span><span class="sub" id="whoami" style="margin-left:8px;opacity:1;font-weight:bold"></span>
   <span class="spacer"></span>
   <button id="btnNew" title="Write your own multiple-choice question and add it to the bank">New question…</button>
-  <button id="btnSave" title="Download this worksheet (question list, breaks, inserted pages and settings) so you can reopen it later">Save list…</button>
-  <button id="btnLoad">Open list…</button>
+  <button id="btnSave" title="Save this worksheet (questions, breaks, inserted pages and settings) so it can be reopened later">Save…</button>
+  <button id="btnLoad">Open…</button>
   <input type="file" id="fileLoad" accept=".json" hidden>
   <button id="btnClear">Clear</button>
   <button id="btnPrint" title="Prints the on-screen worksheet (version A, no key) straight from the browser">Print</button>
@@ -213,6 +213,8 @@
 <section id="work">
   <div id="toolbar">
     <label>Title <input type="text" id="oTitle" value="Chemistry Review"></label>
+    <label>Type <select id="oKind"><option value="worksheet">Worksheet</option><option value="practice">Practice</option><option value="quiz">Quiz</option><option value="test">Test</option><option value="lab">Lab</option></select></label>
+    <label>Unit <select id="oUnitTag"><option value="">None</option></select></label>
     <span class="group">Insert:
       <button class="small" id="insCol" title="Ends the current column; the next question starts the next column">Column break</button>
       <button class="small" id="insPage" title="Ends the current page; the next question starts a new page">Page break</button>
@@ -245,7 +247,14 @@
   <div class="dialog" style="width:min(820px,96vw)">
     <h2>Department worksheets</h2>
     <div class="hint" id="libHint">Everything saved by the department. Open one to keep working on it, or start from a copy.</div>
-    <div id="libList" style="max-height:60vh;overflow:auto;margin-top:10px"></div>
+    <div class="row" style="flex-wrap:wrap;gap:8px;margin-top:8px">
+      <select id="lfYearMode"><option value="">Any year</option><option value="before">Made before</option><option value="on">Made in</option><option value="after">Made after</option></select><input type="number" id="lfYear" style="width:80px" placeholder="year">
+      <select id="lfOwner"><option value="">Anyone</option></select>
+      <select id="lfKind"><option value="">Any type</option><option value="worksheet">Worksheet</option><option value="practice">Practice</option><option value="quiz">Quiz</option><option value="test">Test</option><option value="lab">Lab</option></select>
+      <select id="lfUnit"><option value="">Any unit</option></select>
+      <input type="search" id="lfSearch" placeholder="Title contains…" style="flex:1;min-width:120px">
+    </div>
+    <div id="libList" style="max-height:52vh;overflow:auto;margin-top:10px"></div>
     <div class="actions"><button id="libImport">Import a file…</button><span class="spacer"></span><button id="libClose">Close</button></div>
   </div>
 </div>
@@ -253,6 +262,8 @@
   <div class="dialog narrow">
     <h2>Save worksheet</h2>
     <div class="row"><label style="width:60px">Title</label><input type="text" id="svTitle" style="flex:1"></div>
+    <div class="row"><label style="width:60px">Type</label><select id="svKind"><option value="worksheet">Worksheet</option><option value="practice">Practice</option><option value="quiz">Quiz</option><option value="test">Test</option><option value="lab">Lab</option></select>
+      <label style="margin-left:12px">Unit</label><select id="svUnit"></select></div>
     <div class="hint" id="svHint" style="margin:6px 0 10px"></div>
     <div class="actions"><button id="svExport">Export a file…</button><span class="spacer"></span><button id="svCancel">Cancel</button><button id="svNew">Save as new</button><button id="svUpdate" class="primary">Save</button></div>
   </div>
@@ -468,6 +479,8 @@
   // ---------- filters ----------
   const fUnit = $('fUnit'), fType = $('fType'), fExam = $('fExam');
   UORDER.forEach(u => fUnit.append(new Option(uLabel(u), u)));
+  UORDER.forEach(u => $('oUnitTag').append(new Option(uLabel(u), u)));
+  $('oUnitTag').append(new Option('Lab (several units)', 'lab'));
   fUnit.append(new Option('Misc / other', 'misc'));
   function fillExams() {
     const cur = fExam.value; fExam.innerHTML = '<option value="">All exams</option>';
@@ -881,7 +894,7 @@
   }
 
   // ---------- settings ----------
-  const OPTS = ['oStart', 'oScale', 'oBlanks', 'oNote', 'oBlank', 'oKey', 'oCRKey', 'oRefBlock', 'oSrc', 'oVersion'];
+  const OPTS = ['oStart', 'oScale', 'oBlanks', 'oNote', 'oBlank', 'oKey', 'oCRKey', 'oRefBlock', 'oSrc', 'oVersion', 'oKind', 'oUnitTag'];
   const opt = id => { const el = $(id); return el.type === 'checkbox' ? el.checked : el.value; };
   const setOpt = (id, v) => { const el = $(id); if (!el || v == null) return; if (el.type === 'checkbox') el.checked = !!v; else el.value = v; };
   const getOpts = () => Object.fromEntries(OPTS.map(id => [id, opt(id)]));
@@ -1159,20 +1172,46 @@
   const fmtDate = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }); };
   const short = email => String(email || '').split('@')[0];
   async function saveToLibrary(asNew) {
-    const title = $('svTitle').value.trim() || 'worksheet'; $('oTitle').value = title;
+    const title = $('svTitle').value.trim() || 'worksheet'; $('oTitle').value = title; $('oKind').value = $('svKind').value; $('oUnitTag').value = $('svUnit').value;
     progress('Saving to the department library…');
     try {
-      const r = await call('saveWorksheet', { id: asNew ? null : (currentWs && currentWs.id) || null, title, questions: picked, extras, dropped, options: getOpts() });
+      const r = await call('saveWorksheet', { id: asNew ? null : (currentWs && currentWs.id) || null, title, kind: $('oKind').value, unit: $('oUnitTag').value, questions: picked, extras, dropped, options: getOpts() });
       setCurrent({ id: r.id, title }); persist(); $('savedlg').hidden = true; progress('Saved.'); setTimeout(() => progress(null), 2000);
     } catch (e) { progress(null); alert('Could not save: ' + e.message); }
+  }
+  const KIND_NAME = { worksheet: 'Worksheet', practice: 'Practice', quiz: 'Quiz', test: 'Test', lab: 'Lab' };
+  const unitTagLabel = u => !u ? '' : u === 'lab' ? 'Lab' : 'U' + uNum(u);
+  let libRows = [];
+  function renderLibrary() {
+    const ym = $('lfYearMode').value, yr = Number($('lfYear').value) || 0, own = $('lfOwner').value, kind = $('lfKind').value, unit = $('lfUnit').value, q = $('lfSearch').value.trim().toLowerCase();
+    const rows = libRows.filter(r => {
+      const y = new Date(r.saved).getFullYear();
+      if (ym && yr && !((ym === 'before' && y < yr) || (ym === 'on' && y === yr) || (ym === 'after' && y > yr))) return false;
+      if (own && r.owner !== own) return false;
+      if (kind && (r.kind || 'worksheet') !== kind) return false;
+      if (unit && String(r.unit || '') !== unit) return false;
+      if (q && !String(r.title).toLowerCase().includes(q)) return false;
+      return true;
+    });
+    if (!libRows.length) { $('libList').innerHTML = '<div class="hint">Nothing saved yet. Build a worksheet and use Save….</div>'; return; }
+    $('libList').innerHTML = rows.length ? `<table class="libtable"><tr><th>Title</th><th>Type</th><th>Unit</th><th>Saved by</th><th>Date</th><th>Qs</th><th></th></tr>` +
+        rows.map(r => `<tr><td>${esc(r.title)}</td><td>${KIND_NAME[r.kind] || 'Worksheet'}</td><td>${unitTagLabel(r.unit)}</td><td>${esc(short(r.owner))}</td><td>${fmtDate(r.saved)}</td><td>${r.nq}</td><td style="white-space:nowrap"><button class="small primary" data-open="${r.id}">Open</button> <button class="small" data-copy="${r.id}" title="Open as a new copy that saves separately">Copy</button> <button class="small danger" data-del="${r.id}" title="Remove from the library (older versions stay in the sheet)">&#10005;</button></td></tr>`).join('') + `</table>`
+      : '<div class="hint">Nothing matches those filters.</div>';
+    wireLibraryButtons(rows);
   }
   async function openLibrary() {
     $('libList').innerHTML = '<div class="hint">Loading…</div>'; $('lib').hidden = false;
     try {
-      const rows = await call('listWorksheets');
-      if (!rows.length) { $('libList').innerHTML = '<div class="hint">Nothing saved yet. Build a worksheet and use Save list….</div>'; return; }
-      $('libList').innerHTML = `<table class="libtable"><tr><th>Title</th><th>Saved by</th><th>Date</th><th>Qs</th><th></th></tr>` +
-        rows.map(r => `<tr><td>${esc(r.title)}</td><td>${esc(short(r.owner))}</td><td>${fmtDate(r.saved)}</td><td>${r.nq}</td><td style="white-space:nowrap"><button class="small primary" data-open="${r.id}">Open</button> <button class="small" data-copy="${r.id}" title="Open as a new copy that saves separately">Copy</button> <button class="small danger" data-del="${r.id}" title="Remove from the library (older versions stay in the sheet)">&#10005;</button></td></tr>`).join('') + `</table>`;
+      libRows = await call('listWorksheets');
+      const owners = [...new Set(libRows.map(r => r.owner))].sort();
+      $('lfOwner').innerHTML = '<option value="">Anyone</option>' + owners.map(o => `<option value="${esc(o)}">${esc(short(o))}</option>`).join('');
+      $('lfUnit').innerHTML = '<option value="">Any unit</option>' + UORDER.map(u => `<option value="${u}">${esc(uLabel(u))}</option>`).join('') + '<option value="lab">Lab</option>';
+      renderLibrary();
+    } catch (e) { $('libList').innerHTML = `<div class="hint">${esc(e.message)}</div>`; }
+  }
+  ['lfYearMode', 'lfYear', 'lfOwner', 'lfKind', 'lfUnit', 'lfSearch'].forEach(id => $(id).addEventListener('input', renderLibrary));
+  function wireLibraryButtons(rows) {
+    {
       $('libList').querySelectorAll('button[data-open],button[data-copy]').forEach(b => b.onclick = async () => {
         const id = b.dataset.open || b.dataset.copy; progress('Opening…');
         try { const d = await call('loadWorksheet', id); applyLoaded(d); setCurrent(b.dataset.copy ? null : { id: d.id, title: d.title }); $('lib').hidden = true; }
@@ -1184,13 +1223,14 @@
         if (!confirm(`Remove "${r.title}" from the library?`)) return;
         try { await call('deleteWorksheet', r.id); if (currentWs && currentWs.id === r.id) setCurrent(null); openLibrary(); } catch (e) { alert('Could not remove: ' + e.message); }
       });
-    } catch (e) { $('libList').innerHTML = `<div class="hint">${esc(e.message)}</div>`; }
+    }
   }
   function applyLoaded(d) {
     extras = d.extras || {}; dropped = d.dropped || {};
     picked = (d.questions || []).filter(id => byId[id] || extras[id]);
     if (d.title) $('oTitle').value = d.title;
     if (d.options) Object.entries(d.options).forEach(([k, v]) => { if (OPTS.includes(k)) setOpt(k, v); else if (k === 'start') setOpt('oStart', v); else if (k === 'scale') setOpt('oScale', v); });
+    if (d.kind) setOpt('oKind', d.kind); if (d.unit != null) setOpt('oUnitTag', d.unit);
     const missing = (d.questions || []).length - picked.length;
     if (missing) alert(`${missing} item(s) in that list are not in this question bank and were skipped.`);
     persist(); renderList(); renderSheet();
@@ -1206,7 +1246,8 @@
   $('btnSave').onclick = () => {
     if (!picked.length) return;
     if (!SHARED) { exportFile(); return; }
-    $('svTitle').value = $('oTitle').value;
+    $('svTitle').value = $('oTitle').value; $('svKind').value = $('oKind').value;
+    $('svUnit').innerHTML = $('oUnitTag').innerHTML; $('svUnit').value = $('oUnitTag').value;
     const mine = currentWs && currentWs.id;
     $('svNew').hidden = !mine; $('svUpdate').textContent = mine ? 'Save (new version)' : 'Save to library';
     $('svHint').textContent = mine ? `This worksheet came from the library ("${currentWs.title}"). Saving keeps its place in the list and its history; "Save as new" starts a separate copy.` : 'Saved worksheets are visible to the whole department, with your name and the date.';
@@ -1485,7 +1526,7 @@
   ['fSearch', 'fExam', 'fFig', 'fKind', 'fRef', 'hidePicked'].forEach(id => $(id).addEventListener('input', renderList));
   fType.addEventListener('input', renderList);
   fUnit.addEventListener('input', () => { fillTypes(); renderList(); });
-  ['oTitle'].concat(OPTS).forEach(id => $(id).addEventListener('input', () => { persist(); renderSheet(); if (!$('settings').hidden) versionHint(); }));
+  ['oTitle'].concat(OPTS).forEach(id => $(id).addEventListener('input', () => { persist(); if (!['oKind', 'oUnitTag'].includes(id)) renderSheet(); if (!$('settings').hidden) versionHint(); }));
 
   setBank(bankMode); renderSheet();
   if (location.hash.includes('new')) openBuilder(null);
