@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Unit Mapper</title>
+<style>
+  :root { --maroon: #5a0a11; --maroon-deep: #3d070b; --maroon-tint: #f4e9ea; --tint-line: #ecd9da; --bg: #f5f3f2; --ink: #1a1414; --soft: #5b5454; --line: #ddd9d9; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 13.5px; color: var(--ink); background: var(--bg); display: grid; grid-template-rows: auto auto 1fr; height: 100vh; }
+  header { background: var(--maroon); color: #fff; padding: 8px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  header .badge { width: 34px; height: 34px; border-radius: 50%; background: var(--maroon-deep); border: 2px solid #fff; display: grid; place-items: center; font-family: Georgia, serif; font-size: 12px; }
+  header h1 { font-family: Georgia, serif; font-size: 18px; margin: 0; font-weight: normal; }
+  header .sub { opacity: .85; font-size: 12px; }
+  header .spacer { flex: 1; }
+  button { font: inherit; padding: 6px 14px; border: 1.5px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink); cursor: pointer; }
+  button:hover { border-color: var(--maroon); }
+  header button { color: var(--maroon-deep); border-color: #fff; }
+  button.primary { background: var(--maroon-deep); color: #fff; border-color: #fff; }
+  button.small { padding: 2px 9px; font-size: 12px; }
+  button:disabled { opacity: .4; cursor: default; }
+  select, input { font: inherit; padding: 5px 8px; border: 1.5px solid var(--line); border-radius: 8px; background: #fff; }
+  #tabs { display: flex; gap: 6px; padding: 10px 16px 0; background: #fff; border-bottom: 1px solid var(--line); }
+  #tabs button { border-radius: 10px 10px 0 0; border-bottom: none; }
+  #tabs button.on { background: var(--maroon-tint); color: var(--maroon-deep); border-color: var(--tint-line); font-weight: bold; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 460px; min-height: 0; }
+  #left { overflow: auto; padding: 14px 16px; }
+  #right { border-left: 1px solid var(--line); background: #fff; overflow: auto; padding: 14px 16px; }
+  #right h3 { font-family: Georgia, serif; font-weight: normal; color: var(--maroon-deep); margin: 0 0 8px; font-size: 16px; }
+  #right .ex { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; background: #fff; }
+  #right .ex .src { font-size: 11px; color: var(--soft); margin-bottom: 4px; }
+  #right .ex img { width: 100%; display: block; }
+  .hint { font-size: 12px; color: var(--soft); }
+  table { border-collapse: collapse; width: 100%; background: #fff; border-radius: 10px; overflow: hidden; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--maroon-tint); color: var(--maroon-deep); font-weight: normal; font-size: 12px; position: sticky; top: 0; }
+  tr.cat td { background: #f1efee; font-family: Georgia, serif; color: var(--maroon-deep); padding-top: 10px; }
+  tr.row:hover td { background: #fbf7f7; cursor: pointer; }
+  tr.row.sel td { background: var(--maroon-tint); }
+  tr.changed td:first-child { border-left: 4px solid var(--maroon); }
+  td.n { color: var(--soft); white-space: nowrap; width: 46px; }
+  td.cnt { color: var(--soft); text-align: right; width: 40px; }
+  td.u select { width: 100%; }
+  .units li { list-style: none; display: flex; gap: 8px; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; margin: 6px 0; }
+  .units li .pos { width: 60px; color: var(--maroon-deep); font-family: Georgia, serif; }
+  .units li input { flex: 1; }
+  .units li .cnt { color: var(--soft); font-size: 12px; width: 150px; text-align: right; }
+  .units { padding: 0; margin: 0; max-width: 820px; }
+  #toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+  #status { font-size: 12px; color: var(--soft); }
+  .warn { background: #fdeef0; border: 1px solid #e0b7bb; color: #8b1a1a; padding: 8px 12px; border-radius: 10px; margin-bottom: 10px; font-size: 12.5px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="badge">OP</div>
+  <h1>Unit mapper</h1>
+  <span class="sub">Decide which unit each question archetype belongs to, and the order of the units. The test builder follows this file.</span>
+  <span class="spacer"></span>
+  <button id="btnImport">Open unit-map.js…</button><input type="file" id="fileImport" accept=".js,.json" hidden>
+  <button id="btnReset">Reset to bank defaults</button>
+  <button id="btnExport" class="primary">Export unit-map.js</button>
+</header>
+<div id="tabs"><button data-tab="units" class="on">Units</button><button data-tab="old">Old Regents archetypes</button><button data-tab="new">New Regents archetypes</button></div>
+<main>
+  <div id="left"></div>
+  <div id="right"><h3>Examples</h3><div class="hint">Click an archetype to see two example questions from the bank.</div></div>
+</main>
+<script src="bank/bank.js"></script>
+<script src="bank-new/new.js" onerror="window.BANK_NEW = null"></script>
+<script src="bank/unit-map.js" onerror="window.UNIT_MAP = null"></script>
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const B = window.BANK, BN = window.BANK_NEW || { clusters: [], types: {}, unit_order: [] };
+  if (!B) { $('left').innerHTML = '<div class="warn">bank/bank.js not found. Keep this page in the Chem Test Builder folder.</div>'; return; }
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // ---------- defaults from the banks
+  const defaultUnits = () => {
+    const order = BN.unit_order && BN.unit_order.length ? BN.unit_order : Object.keys(B.units).map(Number).sort((a, b) => a - b);
+    return order.map(id => ({ id: Number(id), name: B.units[id] }));
+  };
+  const defaults = () => ({
+    units: defaultUnits(),
+    old: Object.fromEntries(Object.entries(B.types).map(([t, v]) => [t, v.unit == null ? null : v.unit])),
+    new: Object.fromEntries(Object.entries(BN.types || {}).map(([t, v]) => [t, v.unit == null ? null : v.unit])),
+  });
+  const BASE = defaults();
+  let M;                      // the working map
+  const load = () => {
+    try { const saved = JSON.parse(localStorage.getItem('ctb.unitmap') || 'null'); if (saved && saved.units) return saved; } catch (e) { }
+    if (window.UNIT_MAP && window.UNIT_MAP.units) return JSON.parse(JSON.stringify(window.UNIT_MAP));
+    return defaults();
+  };
+  M = load();
+  // make sure every archetype has an entry
+  Object.keys(BASE.old).forEach(t => { if (!(t in M.old)) M.old[t] = BASE.old[t]; });
+  M.new = M.new || {}; Object.keys(BASE.new).forEach(t => { if (!(t in M.new)) M.new[t] = BASE.new[t]; });
+  const save = () => { try { localStorage.setItem('ctb.unitmap', JSON.stringify(M)); } catch (e) { } status(); };
+  const uName = id => { const u = M.units.find(x => x.id === Number(id)); return u ? u.name : '?'; };
+  const uPos = id => M.units.findIndex(x => x.id === Number(id)) + 1;
+  const uLabel = id => id == null ? '— no unit' : id === 'misc' ? 'Misc / other' : `Unit ${uPos(id)}: ${uName(id)}`;
+
+  // ---------- counts
+  const oldCount = {}; B.questions.forEach(q => { (q.types || []).forEach(t => { oldCount[t] = (oldCount[t] || 0) + 1; }); });
+  (B.clusters || []).forEach(c => c.items.forEach(it => (it.types || []).forEach(t => { oldCount[t] = (oldCount[t] || 0) + 1; })));
+  const newCount = {}; BN.clusters.forEach(c => c.questions.forEach(q => (q.types || []).forEach(t => { newCount[t] = (newCount[t] || 0) + 1; })));
+  const unitCount = id => {
+    const o = Object.entries(M.old).filter(([t, u]) => Number(u) === Number(id)).reduce((s, [t]) => s + (oldCount[t] || 0), 0);
+    const n = Object.entries(M.new).filter(([t, u]) => Number(u) === Number(id)).reduce((s, [t]) => s + (newCount[t] || 0), 0);
+    return `${Object.values(M.old).filter(u => Number(u) === Number(id)).length + Object.values(M.new).filter(u => Number(u) === Number(id)).length} archetypes · ${o + n} questions`;
+  };
+
+  // ---------- images: same lazy data files as the test builder
+  const IMGS = {}, loading = {};
+  const b64bytes = b64 => { const bin = atob(b64); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; };
+  const examOf = path => { const m = String(path).match(/^img(?:-b)?\/(PSC-[^_]+)_/); return m ? m[1] : (String(path).match(/(\d{4}-\d{2})_/) || [])[1]; };
+  function ensureExam(exam) {
+    if (!loading[exam]) loading[exam] = new Promise((res, rej) => {
+      const s = document.createElement('script'); s.src = exam.startsWith('PSC-') ? `bank-new/data/${exam}.js` : `bank/data/${exam}.js`;
+      s.onload = () => { const d = (window.BANKIMG || {})[exam] || {}; for (const p in d) IMGS[p] = { b64: d[p] }; delete window.BANKIMG[exam]; res(); };
+      s.onerror = () => rej(new Error('missing data file for ' + exam)); document.head.appendChild(s);
+    });
+    return loading[exam];
+  }
+  function urlOf(path) { const e = IMGS[path]; if (!e) return ''; if (!e.url) e.url = URL.createObjectURL(new Blob([b64bytes(e.b64)], { type: 'image/png' })); return e.url; }
+
+  // ---------- tabs
+  let tab = 'units', selected = null;
+  document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => { tab = b.dataset.tab; document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b)); render(); });
+
+  function unitOptions(cur, allowNone) {
+    let h = M.units.map(u => `<option value="${u.id}" ${Number(cur) === u.id ? 'selected' : ''}>Unit ${uPos(u.id)}: ${esc(u.name)}</option>`).join('');
+    h += `<option value="misc" ${cur === 'misc' ? 'selected' : ''}>Misc / other</option>`;
+    if (allowNone) h += `<option value="" ${cur == null ? 'selected' : ''}>— no unit (engineering / evaluation)</option>`;
+    return h;
+  }
+
+  function renderUnits() {
+    let h = `<div id="toolbar"><button class="small" id="addUnit">Add a unit</button><span class="hint">Drag is not needed: use ▲ ▼ to reorder. The number shown in the test builder is the unit's position in this list. Names can be edited in place.</span></div><ul class="units">`;
+    M.units.forEach((u, i) => {
+      h += `<li data-id="${u.id}"><span class="pos">Unit ${i + 1}</span><input type="text" value="${esc(u.name)}" data-name="${u.id}"><span class="cnt">${unitCount(u.id)}</span>
+        <button class="small" data-mv="-1" ${i === 0 ? 'disabled' : ''}>&#9650;</button><button class="small" data-mv="1" ${i === M.units.length - 1 ? 'disabled' : ''}>&#9660;</button><button class="small" data-rm="${u.id}" title="Remove this unit">&#10005;</button></li>`;
+    });
+    h += `</ul>`;
+    $('left').innerHTML = h;
+    $('addUnit').onclick = () => { const name = prompt('Name of the new unit:'); if (!name) return; const id = Math.max(0, ...M.units.map(u => u.id), ...Object.keys(B.units).map(Number)) + 1; M.units.push({ id, name: name.trim() }); save(); render(); };
+    $('left').querySelectorAll('input[data-name]').forEach(inp => inp.onchange = () => { const u = M.units.find(x => x.id === Number(inp.dataset.name)); u.name = inp.value.trim() || u.name; save(); render(); });
+    $('left').querySelectorAll('button[data-mv]').forEach(b => b.onclick = () => { const li = b.closest('li'); const i = M.units.findIndex(x => x.id === Number(li.dataset.id)); const j = i + Number(b.dataset.mv); [M.units[i], M.units[j]] = [M.units[j], M.units[i]]; save(); render(); });
+    $('left').querySelectorAll('button[data-rm]').forEach(b => b.onclick = () => {
+      const id = Number(b.dataset.rm); const used = Object.entries(M.old).filter(([t, u]) => Number(u) === id).length + Object.entries(M.new).filter(([t, u]) => Number(u) === id).length;
+      if (M.units.length === 1) return;
+      let target = null;
+      if (used) {
+        const others = M.units.filter(u => u.id !== id);
+        const ans = prompt(`${used} archetype(s) are attached to "${uName(id)}". Move them to which unit? Type its position number (1–${M.units.length}, skipping this one), or "misc":\n` + others.map(u => `${uPos(u.id)} = ${u.name}`).join('\n'));
+        if (ans == null) return;
+        if (ans.trim().toLowerCase() === 'misc') target = 'misc';
+        else { const pos = Number(ans); const u = M.units[pos - 1]; if (!u || u.id === id) { alert('No such unit.'); return; } target = u.id; }
+      } else if (!confirm(`Remove "${uName(id)}"?`)) return;
+      Object.keys(M.old).forEach(t => { if (Number(M.old[t]) === id) M.old[t] = target; });
+      Object.keys(M.new).forEach(t => { if (Number(M.new[t]) === id) M.new[t] = target; });
+      M.units = M.units.filter(u => u.id !== id); save(); render();
+    });
+    $('right').innerHTML = `<h3>How this works</h3><div class="hint" style="line-height:1.5">Reorder or rename units here, then assign archetypes on the other two tabs. <b>Export unit-map.js</b> downloads one small file: drop it into the test builder's <code>bank</code> folder and every copy of the builder picks it up on the next open, and send the same file to Quinn so the master lists are updated too. Your work is also remembered in this browser until you reset it.</div>`;
+  }
+
+  function renderTypes(kind) {
+    const types = kind === 'old' ? B.types : (BN.types || {});
+    const map = kind === 'old' ? M.old : M.new, base = kind === 'old' ? BASE.old : BASE.new, counts = kind === 'old' ? oldCount : newCount;
+    const prefix = kind === 'old' ? 'T' : 'N';
+    const cats = {};
+    Object.keys(types).map(Number).sort((a, b) => a - b).forEach(t => { const c = types[t].category || 'Other'; (cats[c] = cats[c] || []).push(t); });
+    let h = `<div id="toolbar"><input type="search" id="search" placeholder="Search archetypes" style="width:280px"><span class="hint">Change the unit in the dropdown. A maroon bar marks rows that differ from the bank's current mapping. Click a row for examples.</span></div>`;
+    h += `<table><tr><th>#</th><th>Archetype</th><th style="text-align:right">Qs</th><th style="width:300px">Unit</th></tr>`;
+    Object.keys(cats).sort().forEach(cat => {
+      h += `<tr class="cat"><td colspan="4">${esc(cat)}</td></tr>`;
+      cats[cat].forEach(t => {
+        const changed = String(map[t] ?? '') !== String(base[t] ?? '');
+        h += `<tr class="row ${changed ? 'changed' : ''} ${selected === kind + t ? 'sel' : ''}" data-t="${t}"><td class="n">${prefix}${t}</td><td>${esc(types[t].name)}</td><td class="cnt">${counts[t] || 0}</td><td class="u"><select data-t="${t}">${unitOptions(map[t], kind === 'new' || map[t] == null)}</select></td></tr>`;
+      });
+    });
+    h += `</table>`;
+    $('left').innerHTML = h;
+    $('search').oninput = () => { const s = $('search').value.toLowerCase(); $('left').querySelectorAll('tr.row').forEach(tr => { tr.style.display = !s || tr.innerText.toLowerCase().includes(s) ? '' : 'none'; }); };
+    $('left').querySelectorAll('select[data-t]').forEach(sel => { sel.onchange = e => { e.stopPropagation(); const v = sel.value; map[sel.dataset.t] = v === '' ? null : v === 'misc' ? 'misc' : Number(v); save(); renderTypes(kind); }; sel.onclick = e => e.stopPropagation(); });
+    $('left').querySelectorAll('tr.row').forEach(tr => tr.onclick = () => { selected = kind + tr.dataset.t; $('left').querySelectorAll('tr.row').forEach(x => x.classList.toggle('sel', x === tr)); showExamples(kind, Number(tr.dataset.t)); });
+  }
+
+  async function showExamples(kind, t) {
+    const types = kind === 'old' ? B.types : BN.types;
+    const R = $('right');
+    R.innerHTML = `<h3>${kind === 'old' ? 'T' : 'N'}${t}. ${esc(types[t].name)}</h3><div class="hint">Loading examples…</div>`;
+    const exs = [];
+    if (kind === 'old') {
+      const mc = B.questions.filter(q => q.type === t).sort((a, b) => (a.has_figure - b.has_figure) || (a.h_in - b.h_in));
+      const seen = new Set();
+      for (const q of mc) { if (seen.has(q.exam)) continue; seen.add(q.exam); exs.push({ src: `${q.session} ${q.year} Q${q.q} (multiple choice)`, img: q.img }); if (exs.length === 2) break; }
+      if (exs.length < 2) for (const c of (B.clusters || [])) for (const it of c.items) { if (it.type === t && exs.length < 2 && !seen.has(c.exam + it.q)) { seen.add(c.exam + it.q); exs.push({ src: `${c.session} ${c.year} Q${it.q} (constructed response)`, img: it.stem.img }); } }
+    } else {
+      const seen = new Set();
+      for (const c of BN.clusters) for (const qq of c.questions) {
+        if (qq.type !== t || exs.length >= 2 || seen.has(c.exam)) continue;
+        const bl = c.blocks.find(b => b.kind === 'q' && b.q === qq.q); if (!bl) continue;
+        seen.add(c.exam); exs.push({ src: `${c.sample ? 'Sample 2025' : c.session + ' ' + c.year} · "${c.title}" Q${qq.q} (${qq.mc ? 'multiple choice' : 'constructed response'})`, img: bl.img });
+      }
+    }
+    if (!exs.length) { R.innerHTML += '<div class="hint">No question in the bank uses this archetype yet.</div>'; return; }
+    try { await Promise.all([...new Set(exs.map(e => examOf(e.img)))].map(ensureExam)); } catch (e) { R.innerHTML += `<div class="warn">${esc(e.message)}</div>`; return; }
+    R.innerHTML = `<h3>${kind === 'old' ? 'T' : 'N'}${t}. ${esc(types[t].name)}</h3>` + exs.map(e => `<div class="ex"><div class="src">${esc(e.src)}</div><img src="${urlOf(e.img)}" alt=""></div>`).join('');
+  }
+
+  function render() { if (tab === 'units') renderUnits(); else renderTypes(tab); status(); }
+  function status() {
+    const changed = M.units.map(u => u.id).join(',') !== BASE.units.map(u => u.id).join(',') || M.units.some(u => (BASE.units.find(x => x.id === u.id) || {}).name !== u.name) ||
+      Object.keys(M.old).some(t => String(M.old[t] ?? '') !== String(BASE.old[t] ?? '')) || Object.keys(M.new).some(t => String(M.new[t] ?? '') !== String(BASE.new[t] ?? ''));
+    document.querySelector('header .sub').textContent = changed ? 'Unsaved differences from the bank — export unit-map.js when you are done.' : 'Matches the bank’s current mapping.';
+  }
+  $('btnExport').onclick = () => {
+    const out = { version: 1, updated: new Date().toISOString().slice(0, 10), units: M.units, old: M.old, new: M.new };
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['window.UNIT_MAP = ' + JSON.stringify(out, null, 1) + ';\n'], { type: 'text/javascript' })); a.download = 'unit-map.js'; a.click();
+  };
+  $('btnImport').onclick = () => $('fileImport').click();
+  $('fileImport').onchange = e => {
+    const f = e.target.files[0]; if (!f) return;
+    f.text().then(txt => { try { const j = JSON.parse(txt.replace(/^\s*window\.UNIT_MAP\s*=\s*/, '').replace(/;\s*$/, '')); if (!j.units) throw 0; M = j; M.old = M.old || {}; M.new = M.new || {}; save(); render(); } catch (err) { alert('That is not a unit-map file.'); } });
+    e.target.value = '';
+  };
+  $('btnReset').onclick = () => { if (confirm('Throw away your changes and go back to the bank’s current mapping?')) { M = defaults(); save(); render(); } };
+  render();
+})();
+</script>
+</body>
+</html>

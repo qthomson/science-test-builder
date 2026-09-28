@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Chem Test Builder</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    /* Orchard Park CSD science-department palette */
+    --maroon: #5a0a11; --maroon-deep: #3d070b; --maroon-tint: #f4e9ea; --tint-line: #ecd9da; --pink: #e98aa0;
+    --bg: #f5f3f2; --panel: #ffffff; --ink: #1a1414; --soft: #5b5454; --line: #ddd9d9; --gray: #cbc6c6;
+    --page-w: 8.5in; --margin: 0.5in; --gutter: 0.36in;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 13.5px; color: var(--ink); background: var(--bg);
+         display: grid; grid-template-columns: 420px minmax(0, 1fr); grid-template-rows: auto 1fr; height: 100vh; }
+  header { grid-column: 1 / -1; background: var(--maroon); color: #fff; padding: 8px 16px;
+           display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  header .badge { width: 34px; height: 34px; border-radius: 50%; background: var(--maroon-deep); border: 2px solid #fff;
+                  display: grid; place-items: center; font-family: Georgia, serif; font-size: 12px; letter-spacing: .5px; flex: none; }
+  header h1 { font-family: Georgia, serif; font-size: 18px; margin: 0; font-weight: normal; }
+  header .sub { opacity: .85; font-size: 12px; }
+  header .spacer { flex: 1; }
+  button { font: inherit; padding: 6px 14px; border: 1.5px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink); cursor: pointer; }
+  button:hover { border-color: var(--maroon); }
+  header button { background: #fff; color: var(--maroon-deep); border-color: #fff; }
+  header button.primary, button.primary { background: var(--maroon-deep); color: #fff; border-color: #fff; }
+  button.primary:hover { background: #4a0a0f; }
+  button:disabled { opacity: .5; cursor: default; }
+  button.small { padding: 3px 10px; font-size: 12px; }
+  input, select { font: inherit; padding: 6px 9px; border: 1.5px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); }
+  input:focus, select:focus { outline: none; border-color: var(--maroon); }
+
+  #browser { display: flex; flex-direction: column; border-right: 1px solid var(--line); background: var(--panel); min-height: 0; min-width: 0; }
+  #bankswitch { display: flex; gap: 6px; padding: 10px 14px 0; }
+  #bankswitch button { flex: 1; border-radius: 10px; padding: 7px 8px; font-size: 12.5px; }
+  #bankswitch button.on { background: var(--maroon-deep); color: #fff; border-color: var(--maroon-deep); }
+  .card.ncl .meta b::before { content: "\25A3 "; color: var(--maroon); }
+  .card.ncl .title { font-family: Georgia, serif; font-size: 14px; color: var(--ink); padding: 0 12px 6px; }
+  .card .ubadge { font-size: 11px; padding: 1px 6px; border-radius: 6px; background: var(--maroon-tint); color: var(--maroon-deep); border: 1px solid var(--tint-line); }
+  .card .ubadge.none { background: #f1efee; color: var(--soft); border-color: var(--line); }
+  .card.ncl .thumb img { max-height: 180px; object-fit: cover; object-position: top; }
+  .page.fixed .body { overflow: hidden; }
+  .page .nnum { position: absolute; font-family: "LibSerif", "Times New Roman", Times, serif; text-align: right; background: #fff; }
+  #filters[hidden], #nfilters[hidden] { display: none !important; }
+  #filters { padding: 12px 14px; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+  #filters .full { grid-column: 1 / -1; }
+  #filters label { font-size: 11px; color: var(--soft); display: block; margin-bottom: 3px; }
+  #filters input, #filters select { width: 100%; min-width: 0; max-width: 100%; }
+  #count { font-size: 12px; color: var(--soft); padding: 8px 14px; display: flex; justify-content: space-between; align-items: center; }
+  #list { overflow: auto; flex: 1; padding: 0 10px 10px; background: var(--bg); }
+  .card { border: 1px solid var(--line); border-radius: 12px; margin: 8px 0; background: #fff; cursor: pointer; overflow: hidden; }
+  .card:hover { border-color: var(--maroon); }
+  .card.picked { background: var(--maroon-tint); border-color: #e0b7bb; }
+  .card .meta { display: flex; gap: 8px; align-items: center; padding: 8px 12px; font-size: 12px; color: var(--soft); flex-wrap: wrap; }
+  .card .meta b { color: var(--maroon-deep); font-weight: bold; }
+  .card .tag { margin-left: auto; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--maroon-tint); color: var(--maroon-deep);
+               border: 1px solid var(--tint-line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
+  .card.picked .tag { background: var(--maroon); color: #fff; border-color: var(--maroon); }
+  .card .ref { font-size: 11px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--soft); white-space: nowrap; }
+  .card .ref.old { border-color: var(--maroon); color: var(--maroon-deep); }
+  .card .thumb { padding: 0 12px 10px; }
+  .card .thumb img { width: 100%; display: block; min-height: 20px; background: #fafafa; }
+  .card.cluster .thumb img.stem { width: 92%; margin: 6px 0 0 8%; border-left: 3px solid var(--tint-line); padding-left: 6px; }
+  .card.cluster .meta b::before { content: "¶ "; color: var(--maroon); }
+  .card.cluster .thumb img.stem { cursor: pointer; }
+  .card.cluster .thumb img.stem.dropped { opacity: .3; border-left-color: var(--gray); }
+  .card .drops { width: 100%; font-size: 11px; color: var(--soft); }
+  .card .drops button { padding: 0 8px; font-size: 11px; margin-left: 4px; }
+  .item .cq { display: flex; flex-direction: column; }
+  .item .cq img.resp { margin-top: 0.06in; }
+
+  #work { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+  #toolbar { padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; background: var(--panel); border-bottom: 1px solid var(--line); }
+  #toolbar label { font-size: 12px; color: var(--soft); display: flex; align-items: center; gap: 6px; }
+  #toolbar input[type=text] { width: 240px; }
+  #toolbar .group { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--soft); }
+  #status { font-size: 12px; color: var(--soft); margin-left: auto; text-align: right; }
+  #tables { font-size: 12px; color: var(--soft); padding: 8px 16px; background: var(--maroon-tint); border-bottom: 1px solid var(--tint-line); display: none; }
+  #tables b { color: var(--maroon-deep); }
+  #sheetwrap { overflow: auto; flex: 1; padding: 20px; }
+  #empty { color: var(--soft); text-align: center; margin: 60px auto 0; font-size: 14px; max-width: 460px; background: var(--maroon-tint);
+           border: 1px solid var(--tint-line); border-radius: 12px; padding: 18px 22px; color: var(--maroon-deep); line-height: 1.5; }
+
+  .page { background: #fff; width: 8.5in; height: 11in; margin: 0 auto 20px; padding: var(--margin); position: relative;
+          border: 1px solid var(--line); color: #000; overflow: hidden; }
+  .page.pdfpage { padding: 0; }
+  .page.pdfpage img.full { width: 8.5in; height: 11in; display: block; }
+  .page.pdfpage .ctl { position: absolute; right: 8px; top: 8px; display: none; gap: 3px; }
+  .page.pdfpage:hover .ctl { display: flex; }
+  .page.pdfpage .cap { position: absolute; left: 8px; top: 8px; font-size: 11px; background: var(--maroon-tint); color: var(--maroon-deep); padding: 2px 8px; border-radius: 999px; border: 1px solid var(--tint-line); }
+  .page .body { position: relative; width: 7.5in; height: 10in; }
+  .page .head { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1.5px solid #000; padding-bottom: 4px;
+                font-family: "LibSerif", "Times New Roman", Times, serif; height: 0.4in; }
+  .page .head .title { font-size: 14pt; font-weight: bold; }
+  .page .head .blanks { font-size: 11pt; }
+  .page .note { font-family: "LibSerif", "Times New Roman", Times, serif; font-size: 10pt; font-style: italic; height: 0.28in; padding-top: 0.06in; }
+  .page .pnum { position: absolute; bottom: -0.3in; width: 100%; text-align: center; font-family: "LibSerif", "Times New Roman", Times, serif; font-size: 9pt; color: #444; }
+  .item { position: absolute; display: flex; align-items: flex-start; }
+  .item .ablank, .page .ablank { position: absolute; border-bottom: 1px solid #000; height: 0; }
+  .item .num { flex: 0 0 var(--gutter); text-align: right; padding-right: 0.06in; font-family: "LibSerif", "Times New Roman", Times, serif;
+               font-size: 11pt; line-height: 1.1; padding-top: 0.01in; position: relative; z-index: 1; }
+  .item img { display: block; }
+  .item .ctl { position: absolute; right: -2px; top: -2px; display: none; gap: 3px; z-index: 2; }
+  .item:hover .ctl { display: flex; }
+  .item .ctl button, .page.pdfpage .ctl button { padding: 0 6px; font-size: 11px; line-height: 18px; }
+  .rule { position: absolute; border-left: 1px solid #000; width: 0; }
+  .item .slot { position: absolute; display: block; text-align: center; font-family: "LibSerif", "Times New Roman", Times, serif;
+                white-space: nowrap; background: #fff; }
+  .item .brk { height: 0.3in; border: 1.5px dashed var(--maroon); border-radius: 8px; color: var(--maroon-deep); background: var(--maroon-tint);
+               font-family: Arial, Helvetica, sans-serif; font-size: 11px; display: flex; align-items: center; justify-content: center; letter-spacing: .3px; opacity: .9; }
+  .key { font-family: "LibSerif", "Times New Roman", Times, serif; }
+  .key h2 { font-size: 13pt; margin: 0 0 8px; }
+  .key .tables { display: flex; gap: 0.25in; align-items: flex-start; }
+  .key table { border-collapse: collapse; font-size: 10.5pt; }
+  .key td, .key th { border: 1px solid #000; padding: 2px 10px; text-align: center; }
+  .key th { background: #eee; }
+  .key .src { color: #555; font-size: 9pt; }
+  .key .refblock { margin-top: 14px; font-size: 10.5pt; line-height: 1.4; border-top: 1px solid #000; padding-top: 8px; }
+  .key .refblock .old { font-weight: bold; }
+
+  .custom-q { position: relative; font-family: "LibSerif", "Times New Roman", Times, serif; color: #000; }
+  .custom-q span { position: absolute; white-space: pre; line-height: 1; }
+  .custom-q img { position: absolute; }
+  .card.custom .meta b::before { content: "✎ "; color: var(--maroon); }
+  .card .thumb .custom-q { margin: 2px 0 4px; }
+  .card .edit { margin-left: 6px; padding: 1px 8px; font-size: 11px; }
+  #pvBody img { max-width: 100%; display: block; background: #fff; }
+  #pvBody .pq { display: flex; gap: 12px; align-items: flex-start; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin: 8px 0; }
+  #pvBody .pq label { flex: none; font-size: 12px; color: var(--soft); display: flex; flex-direction: column; align-items: center; gap: 4px; width: 64px; }
+  #pvBody .pq label input { accent-color: var(--maroon); width: 18px; height: 18px; }
+  #pvBody .pq.out img { opacity: .3; }
+  #pvBody .pblock { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin: 8px 0; }
+  #pvBody .plabel { font-size: 11px; color: var(--soft); margin-bottom: 4px; }
+  .modal { position: fixed; inset: 0; background: rgba(26,20,20,.45); display: grid; place-items: center; z-index: 50; }
+  .modal[hidden] { display: none; }
+  .dialog { background: #fff; border-radius: 14px; width: min(900px, 94vw); max-height: 92vh; overflow: auto; padding: 18px 22px; border: 1px solid var(--line); }
+  .dialog.narrow { width: min(560px, 94vw); }
+  .dialog h2 { font-family: Georgia, serif; font-size: 19px; margin: 0 0 12px; color: var(--maroon-deep); }
+  .dialog h3 { font-family: Georgia, serif; font-size: 14px; margin: 14px 0 6px; color: var(--maroon-deep); font-weight: normal; border-bottom: 1px solid var(--tint-line); padding-bottom: 3px; }
+  .dialog .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
+  .dialog .grid label { font-size: 12px; color: var(--soft); display: flex; flex-direction: column; gap: 4px; }
+  .dialog .grid label.full { grid-column: 1 / -1; }
+  .dialog .row { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 4px 0; }
+  .dialog .row input[type=number] { width: 70px; }
+  .dialog .row select { max-width: 100%; }
+  .dialog .row input[type=checkbox] { accent-color: var(--maroon); width: 16px; height: 16px; }
+  .dialog input[type=text], .dialog textarea, .dialog select { font-family: Arial, Helvetica, sans-serif; color: var(--ink); }
+  .dialog .grid input[type=text], .dialog textarea, .dialog .grid select { width: 100%; }
+  .dialog textarea { resize: vertical; }
+  .dialog .hint { font-size: 11px; color: var(--soft); }
+  .dialog .preview { margin-top: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+  .dialog .preview .pv { background: #fff; padding: 10px 12px; border: 1px solid var(--line); display: inline-block; }
+  .dialog .actions { display: flex; gap: 10px; margin-top: 14px; align-items: center; }
+  .dialog .actions .spacer { flex: 1; }
+  button.danger { color: #8b1a1a; border-color: #e0b7bb; background: #fdeef0; }
+  #progress { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--maroon-deep); color: #fff; padding: 10px 18px;
+              border-radius: 999px; font-size: 13px; z-index: 60; box-shadow: 0 4px 16px rgba(0,0,0,.25); }
+  #progress[hidden] { display: none; }
+
+  @media print {
+    @page { size: letter; margin: 0; }
+    body { display: block; background: #fff; height: auto; }
+    header, #browser, #toolbar, #tables, .item .ctl, .page.pdfpage .ctl, .page.pdfpage .cap, #empty, .modal, #progress, .item .brk { display: none !important; }
+    #work, #sheetwrap { display: block; overflow: visible; padding: 0; height: auto; }
+    .page { box-shadow: none; border: 0; margin: 0; page-break-after: always; break-after: page; }
+    .page:last-child { page-break-after: auto; break-after: auto; }
+    .page.keypage { display: none !important; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="badge" title="Orchard Park CSD — Science">OP</div>
+  <h1>Chemistry test builder</h1>
+  <span class="sub" id="bankinfo"></span>
+  <span class="spacer"></span>
+  <button id="btnNew" title="Write your own multiple-choice question and add it to the bank">New question…</button>
+  <button id="btnSave" title="Download this worksheet (question list, breaks, inserted pages and settings) so you can reopen it later">Save list…</button>
+  <button id="btnLoad">Open list…</button>
+  <input type="file" id="fileLoad" accept=".json" hidden>
+  <button id="btnClear">Clear</button>
+  <button id="btnPrint" title="Prints the on-screen worksheet (version A, no key) straight from the browser">Print</button>
+  <button class="primary" id="btnPDF" title="Makes the PDF files: worksheet(s) and key(s), named after the title">Make PDFs</button>
+</header>
+
+<section id="browser">
+  <div id="bankswitch"><button id="swOld" class="on">Old Regents 2012–2026</button><button id="swNew">New Regents clusters</button></div>
+  <div id="nfilters" hidden style="padding:12px 14px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px">
+    <div class="full" style="grid-column:1/-1"><label style="font-size:11px;color:var(--soft);display:block;margin-bottom:3px">Search cluster text</label><input id="nSearch" type="search" placeholder="e.g. balloon, pH, radium" style="width:100%"></div>
+    <div><label style="font-size:11px;color:var(--soft);display:block;margin-bottom:3px">Unit (Scope &amp; Sequence)</label><select id="nUnit" style="width:100%"><option value="">Any unit</option></select></div>
+    <div><label style="font-size:11px;color:var(--soft);display:block;margin-bottom:3px">Unit rule</label><select id="nMode" style="width:100%"><option value="touch">Cluster touches this unit</option><option value="only">Only this unit</option><option value="upto">This unit and earlier only</option></select></div>
+    <div><label style="font-size:11px;color:var(--soft);display:block;margin-bottom:3px">Exam</label><select id="nExam" style="width:100%"><option value="">All</option></select></div>
+    <div><label style="font-size:11px;color:var(--soft);display:block;margin-bottom:3px">Question type</label><select id="nType" style="width:100%"><option value="">All types</option></select></div>
+  </div>
+  <div id="filters">
+    <div class="full"><label>Search question text</label><input id="fSearch" type="search" placeholder="e.g. half-life, Table G, electronegativity"></div>
+    <div class="full"><label>Unit (Scope &amp; Sequence)</label><select id="fUnit"><option value="">All units</option></select></div>
+    <div class="full"><label>Question type</label><select id="fType"><option value="">All types</option></select></div>
+    <div><label>Kind</label><select id="fKind"><option value="">Everything</option><option value="mc">Regents multiple choice (Parts A, B-1)</option><option value="cr">Clusters with work space (Parts B-2, C)</option><option value="custom">My questions (custom)</option></select></div>
+    <div><label>Exam</label><select id="fExam"><option value="">All exams</option></select></div>
+    <div><label>Figure</label><select id="fFig"><option value="">Any</option><option value="1">Has diagram/table</option><option value="0">Text only</option></select></div>
+    <div><label>Reference table</label><select id="fRef"><option value="">Any</option><option value="none">No table needed</option><option value="any">Needs a table (either edition)</option><option value="old">Needs the 2011 tables (not on 2025)</option><option value="covered">Table info is on the 2025 tables</option></select></div>
+  </div>
+  <div id="count"><span id="countText"></span><label style="font-size:12px"><input type="checkbox" id="hidePicked" style="accent-color:var(--maroon)"> hide added</label></div>
+  <div id="list"></div>
+</section>
+
+<section id="work">
+  <div id="toolbar">
+    <label>Title <input type="text" id="oTitle" value="Chemistry Review"></label>
+    <span class="group">Insert:
+      <button class="small" id="insCol" title="Ends the current column; the next question starts the next column">Column break</button>
+      <button class="small" id="insPage" title="Ends the current page; the next question starts a new page">Page break</button>
+      <button class="small" id="insPDF" title="Adds full pages from a PDF of your own (a reference sheet, a diagram page, …)">PDF page…</button>
+      <input type="file" id="filePDF" accept="application/pdf,.pdf" hidden>
+    </span>
+    <button class="small" id="btnSettings">Worksheet settings…</button>
+    <span id="status"></span>
+  </div>
+  <div id="tables"></div>
+  <div id="sheetwrap">
+    <div id="empty">Click a question on the left to add it to the worksheet. Click it again to take it off.<br>
+      <span style="font-size:12px">Use <i>Insert</i> for column or page breaks and your own PDF pages, and <i>Worksheet settings…</i> for numbering, size, answer keys and A/B versions.</span></div>
+    <div id="sheet" hidden></div>
+  </div>
+</section>
+
+<div id="progress" hidden></div>
+
+<div id="preview" class="modal" hidden>
+  <div class="dialog" style="width:min(1000px,96vw)">
+    <h2 id="pvTitle">Cluster</h2>
+    <div class="hint" id="pvHint"></div>
+    <div id="pvBody" style="max-height:62vh;overflow:auto;margin-top:10px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px"></div>
+    <div class="actions"><button id="pvRemove" class="danger" hidden>Remove from worksheet</button><span class="spacer"></span><button id="pvCancel">Cancel</button><button id="pvInsert" class="primary">Insert</button></div>
+  </div>
+</div>
+
+<div id="dl" class="modal" hidden>
+  <div class="dialog narrow">
+    <h2>Your PDFs are ready</h2>
+    <div class="hint" style="margin-bottom:10px">Click each file to save it. If nothing happens, your browser is blocking downloads from this page: use <b>Open</b> instead, then save or print from the viewer.</div>
+    <div id="dlList"></div>
+    <div class="actions"><span class="spacer"></span><button id="dlClose" class="primary">Done</button></div>
+  </div>
+</div>
+
+<div id="settings" class="modal" hidden>
+  <div class="dialog narrow">
+    <h2>Worksheet settings</h2>
+    <h3>Layout</h3>
+    <div class="row"><label>Start numbering at</label><input type="number" id="oStart" value="1" min="1"></div>
+    <div class="row"><label>Question size</label><input type="number" id="oScale" value="100" min="60" max="120" step="5"><span class="hint">% (100 = exactly as printed on the exam)</span></div>
+    <div class="row"><input type="checkbox" id="oBlanks" checked><label for="oBlanks">Name / date / period line</label></div>
+    <div class="row"><input type="checkbox" id="oNote" checked><label for="oNote">"Some questions may require the use of the Reference Tables" note</label></div>
+    <div class="row"><input type="checkbox" id="oBlank"><label for="oBlank">Answer blank in the margin before each multiple-choice number ( ___ 4. ) for quick grading</label></div>
+    <h3>Teacher pages</h3>
+    <div class="row"><input type="checkbox" id="oKey" checked><label for="oKey">Answer key (numbered table)</label></div>
+    <div class="row"><input type="checkbox" id="oCRKey" checked><label for="oCRKey">Constructed-response scoring pages (rating-guide blocks)</label></div>
+    <div class="row"><input type="checkbox" id="oRefBlock" checked><label for="oRefBlock">Reference-table list on the key (which tables each question needs)</label></div>
+    <div class="row"><input type="checkbox" id="oSrc"><label for="oSrc">Show each question's source exam on the key</label></div>
+    <h3>Versions</h3>
+    <div class="row"><select id="oVersion">
+      <option value="single">One version</option>
+      <option value="decoy">One version, printed twice as "Form A" and "Form B" (same questions, same order, one key)</option>
+      <option value="ab">Two versions, A and B, labeled "Form A" / "Form B" (B has the answer choices in a different order)</option>
+      <option value="abnolabel">Two versions, A and B, no label on the page</option>
+    </select></div>
+    <div class="hint" id="versionHint"></div>
+    <div class="actions"><span class="spacer"></span><button id="sClose" class="primary">Done</button></div>
+  </div>
+</div>
+
+<div id="modal" class="modal" hidden>
+  <div class="dialog">
+    <h2 id="mTitle">New multiple-choice question</h2>
+    <div class="grid">
+      <label class="full">Intro line above the diagram (optional, e.g. "Given the particle diagram:")
+        <input type="text" id="mIntro"></label>
+      <label class="full">Diagram (optional) <input type="file" id="mDiagram" accept="image/*">
+        <span class="hint" id="mDiagramInfo">PNG or JPG. It prints centered under the intro line; use a clean, cropped image.</span></label>
+      <label class="full">Question <textarea id="mStem" rows="3" placeholder="Which type of reaction is represented by the equation?"></textarea></label>
+      <label>(1) <input type="text" id="mC1"></label>
+      <label>(3) <input type="text" id="mC3"></label>
+      <label>(2) <input type="text" id="mC2"></label>
+      <label>(4) <input type="text" id="mC4"></label>
+      <label>Correct answer <select id="mAns"><option value="1">(1)</option><option value="2">(2)</option><option value="3">(3)</option><option value="4">(4)</option></select></label>
+      <label>Width <select id="mWidth"><option value="half">Half page (column)</option><option value="full">Full width</option></select></label>
+      <label>Unit <select id="mUnit"></select></label>
+      <label>Question type <select id="mType"></select></label>
+      <label>Reference table needed <select id="mRef"><option value="none">None</option><option value="covered">Yes, and it is on the 2025 tables</option><option value="old">Yes, only on the 2011 tables</option></select></label>
+      <label>Which table(s)? (letters, e.g. E, S) <input type="text" id="mTables" placeholder="optional"></label>
+      <label>Your initials (optional) <input type="text" id="mAuthor" maxlength="6"></label>
+    </div>
+    <div class="preview"><div class="hint">Preview</div><div class="pv"><div id="mPreview" class="custom-q"></div></div></div>
+    <div class="actions">
+      <button id="mDelete" class="danger" hidden>Delete question</button>
+      <button id="mExport" title="Downloads custom.js — put it in the bank folder to share these questions with colleagues">Export my questions…</button>
+      <span class="spacer"></span>
+      <button id="mCancel">Cancel</button>
+      <button id="mSave" class="primary">Save to my questions</button>
+    </div>
+  </div>
+</div>
+
+<script src="lib/pdf-lib.min.js"></script>
+<script src="lib/fontkit.umd.min.js"></script>
+<script src="lib/pdf.worker.min.js"></script>
+<script src="lib/pdf.min.js"></script>
+<script src="lib/fonts.js"></script>
+<script src="bank/bank.js"></script>
+<script src="bank-new/new.js" onerror="window.BANK_NEW = null"></script>
+<script src="bank/unit-map.js" onerror="window.UNIT_MAP = null"></script>
+<script src="bank/custom.js" onerror="window.CUSTOM = window.CUSTOM || []"></script>
+<script>
+(async function () {
+  const B = window.BANK;
+  const $ = id => document.getElementById(id);
+  if (!B) { $('empty').textContent = 'bank/bank.js not found. Keep this file in the same folder as the "bank" and "lib" folders.'; return; }
+  const { PDFDocument, rgb } = window.PDFLib;
+  const T = B.types, U = B.units, C = B.clusters || [];
+  C.forEach(c => { c.kind = 'cluster'; });
+  const BN = window.BANK_NEW || { clusters: [], types: {}, unit_order: [] };
+  const NC = BN.clusters; NC.forEach(c => { c.kind = 'ncl'; });
+  const NT = BN.types || {};
+  let UORDER = BN.unit_order && BN.unit_order.length ? BN.unit_order.slice() : Object.keys(U).map(Number).sort((a, b) => a - b);
+  // ---- unit map (bank/unit-map.js from the Unit Mapper page): unit order & names, archetype -> unit
+  const UM = window.UNIT_MAP;
+  if (UM && UM.units) {
+    Object.keys(U).forEach(k => delete U[k]);
+    UM.units.forEach(u => { U[u.id] = u.name; });
+    UORDER = UM.units.map(u => Number(u.id));
+    const fix = v => (v == null || v === 'misc' || !(v in U)) ? (v === 'misc' ? 'misc' : null) : Number(v);
+    if (UM.old) Object.entries(UM.old).forEach(([t, u]) => { if (T[t]) T[t].unit = fix(u); });
+    if (UM.new) Object.entries(UM.new).forEach(([t, u]) => { if (NT[t]) NT[t].unit = fix(u); });
+    B.questions.forEach(q => { q.unit = q.type != null && T[q.type] ? T[q.type].unit : null; });
+    C.forEach(c => { c.items.forEach(it => { it.unit = it.type != null && T[it.type] ? T[it.type].unit : null; });
+      const us = c.items.map(it => it.unit).filter(u => u != null); c.units = [...new Set(us)].sort((a, b) => UORDER.indexOf(a) - UORDER.indexOf(b));
+      c.unit = us.length ? us.sort((a, b) => us.filter(x => x === b).length - us.filter(x => x === a).length)[0] : null; });
+    NC.forEach(c => { c.questions.forEach(qq => { qq.unit = qq.type != null && NT[qq.type] ? NT[qq.type].unit : null; });
+      c.units = [...new Set(c.questions.map(q => q.unit).filter(u => u != null))].sort((a, b) => UORDER.indexOf(a) - UORDER.indexOf(b)); c.max_unit = c.units[c.units.length - 1] || null; });
+  }
+  const uidx = u => UORDER.indexOf(Number(u));
+  const uNum = u => u === 'misc' || u == null ? '?' : (uidx(u) >= 0 ? uidx(u) + 1 : u);      // displayed unit number = position in the order
+  const uLabel = u => u === 'misc' || u == null ? 'Misc / other' : `Unit ${uNum(u)}: ${U[u] || ''}`;
+  let bankMode = localStorage.getItem('ctb.bank') === 'new' && NC.length ? 'new' : 'old';
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // ---------- fonts: Liberation Serif (metric-compatible with Times) for the screen and the PDFs ----------
+  const b64bytes = b64 => { const bin = atob(b64); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; };
+  const FONTB = { serif: b64bytes(window.FONTS.serif), bold: b64bytes(window.FONTS.serifBold), italic: b64bytes(window.FONTS.serifItalic) };
+  document.head.insertAdjacentHTML('beforeend', `<style>
+    @font-face { font-family: "LibSerif"; src: url(data:font/ttf;base64,${window.FONTS.serif}); }
+    @font-face { font-family: "LibSerif"; font-weight: bold; src: url(data:font/ttf;base64,${window.FONTS.serifBold}); }
+    @font-face { font-family: "LibSerif"; font-style: italic; src: url(data:font/ttf;base64,${window.FONTS.serifItalic}); }</style>`);
+  const measureDoc = await PDFDocument.create(); measureDoc.registerFontkit(window.fontkit);
+  const MF = await measureDoc.embedFont(FONTB.serif);
+  const CHARSET = new Set(MF.getCharacterSet());
+  const clean = s => Array.from(String(s ?? '')).map(ch => (CHARSET.has(ch.codePointAt(0)) || ch === '\n') ? ch : '?').join('');
+  const textW = (s, pt) => MF.widthOfTextAtSize(s, pt) / 72;     // inches
+  function wrap(text, wIn, pt) {
+    const out = [];
+    for (const para of clean(text).split('\n')) {
+      let line = '';
+      for (const word of para.split(/\s+/).filter(Boolean)) {
+        const t = line ? line + ' ' + word : word;
+        if (textW(t, pt) <= wIn || !line) { line = t; }
+        else { out.push(line); line = word; }
+        while (textW(line, pt) > wIn && line.length > 1) {
+          let cut = line.length - 1; while (cut > 1 && textW(line.slice(0, cut), pt) > wIn) cut--;
+          out.push(line.slice(0, cut)); line = line.slice(cut);
+        }
+      }
+      out.push(line);
+    }
+    return out;
+  }
+
+  // ---------- image data: bank/data/YYYY-MM.js files, loaded when first needed ----------
+  const IMGS = {}, loading = {};
+  const examOf = path => { const m = String(path).match(/^img(?:-b)?\/(PSC-[^_]+)_/); return m ? m[1] : (String(path).match(/(\d{4}-\d{2})_/) || [])[1]; };
+  function ensureExam(exam) {
+    if (!exam) return Promise.resolve();
+    if (!loading[exam]) loading[exam] = new Promise((res, rej) => {
+      const s = document.createElement('script'); s.src = exam.startsWith('PSC-') ? `bank-new/data/${exam}.js` : `bank/data/${exam}.js`;
+      s.onload = () => { const d = (window.BANKIMG || {})[exam] || {}; for (const p in d) IMGS[p] = { b64: d[p] }; if (window.BANKIMG) delete window.BANKIMG[exam]; res(); };
+      s.onerror = () => rej(new Error(`${exam.startsWith('PSC-') ? 'bank-new' : 'bank'}/data/${exam}.js is missing`));
+      document.head.appendChild(s);
+    });
+    return loading[exam];
+  }
+  const ensurePaths = paths => Promise.all([...new Set(paths.map(examOf).filter(Boolean))].map(ensureExam));
+  function bytesOf(path) {
+    const e = IMGS[path]; if (!e) return null;
+    if (!e.bytes) { e.bytes = b64bytes(e.b64); delete e.b64; }
+    return e.bytes;
+  }
+  function urlOf(path) {
+    if (!path) return '';
+    if (path.startsWith('data:')) return path;
+    const e = IMGS[path]; if (!e) return '';
+    if (!e.url) e.url = URL.createObjectURL(new Blob([bytesOf(path)], { type: 'image/png' }));
+    return e.url;
+  }
+  const io = new IntersectionObserver(entries => entries.forEach(en => {
+    if (!en.isIntersecting) return;
+    const img = en.target; io.unobserve(img); const p = img.dataset.src;
+    ensureExam(examOf(p)).then(() => { img.src = urlOf(p); }).catch(() => { img.alt = 'image data missing'; });
+  }), { root: $('list'), rootMargin: '400px' });
+  const lazy = root => root.querySelectorAll('img[data-src]').forEach(img => io.observe(img));
+
+  // ---------- teacher-written questions ----------
+  function decorate(q) {
+    return Object.assign(q, { kind: 'custom', exam: 'custom', session: 'Custom', year: 9999,
+      types: q.type === 'misc' || q.type == null ? [] : [Number(q.type)], has_figure: !!q.diagram, descriptor: 'Custom question',
+      ref: q.ref || 'none', tables: q.tables || [], refnote: '', text: [q.intro, q.stem].concat(q.choices).join(' ') });
+  }
+  function loadCustom() {
+    const byIdC = {};
+    (window.CUSTOM || []).forEach(q => { byIdC[q.id] = q; });
+    try { JSON.parse(localStorage.getItem('ctb.custom') || '[]').forEach(q => { if (!byIdC[q.id] || (q.updated || 0) >= (byIdC[q.id].updated || 0)) byIdC[q.id] = q; }); } catch (e) { }
+    return Object.values(byIdC).sort((a, b) => (a.created || 0) - (b.created || 0)).map((q, i) => decorate(Object.assign(q, { q: i + 1 })));
+  }
+  const CUSTOM = loadCustom();
+  const Q = B.questions.concat(CUSTOM);
+  let byId = {};
+  const reindex = () => { byId = Object.fromEntries(Q.concat(C).concat(NC).map(q => [q.id, q])); };
+  reindex();
+  const stimById = Object.fromEntries(B.stimuli.map(s => [s.id, s]));
+  let picked = [];          // ids in worksheet order: questions, clusters, and extras (breaks, pdf pages)
+  let extras = {};          // id -> {kind:'brk', type:'col'|'page'} | {kind:'pdf', name, page, pages, pdf(base64), thumb}
+  let dropped = {};         // cluster id -> [question numbers left out of that cluster]
+  const isDropped = (cid, q) => (dropped[cid] || []).includes(q);
+  const keptItems = c => c.items.filter(it => !isDropped(c.id, it.q));
+
+  // ---------- filters ----------
+  const fUnit = $('fUnit'), fType = $('fType'), fExam = $('fExam');
+  UORDER.forEach(u => fUnit.append(new Option(uLabel(u), u)));
+  fUnit.append(new Option('Misc / other', 'misc'));
+  function fillExams() {
+    const cur = fExam.value; fExam.innerHTML = '<option value="">All exams</option>';
+    if (Q.some(q => q.kind === 'custom')) fExam.append(new Option('My questions (custom)', 'custom'));
+    [...new Set(Q.filter(q => q.kind !== 'custom').map(q => q.exam))].sort().reverse().forEach(e => {
+      const q = Q.find(x => x.exam === e); fExam.append(new Option(`${q.session} ${q.year}`, e));
+    });
+    fExam.value = [...fExam.options].some(o => o.value === cur) ? cur : '';
+  }
+  fillExams();
+  function fillTypes() {
+    const u = fUnit.value; const cur = fType.value;
+    fType.innerHTML = '<option value="">All types</option>';
+    const used = new Set(Q.map(q => q.type));
+    Object.keys(T).map(Number).sort((a, b) => a - b).forEach(t => {
+      if (!used.has(t)) return;
+      if (u && String(T[t].unit) !== u) return;
+      fType.append(new Option(`${t}. ${T[t].name}`, t));
+    });
+    fType.append(new Option('Misc / other', 'misc'));
+    fType.value = [...fType.options].some(o => o.value === cur) ? cur : '';
+  }
+  fillTypes();
+  const crCount = C.reduce((s, c) => s + c.items.length, 0), regents = Q.filter(q => q.kind !== 'custom');
+  function updateInfo() {
+    const mine = Q.filter(q => q.kind === 'custom').length;
+    $('bankinfo').textContent = `${regents.length} multiple-choice questions` + (crCount ? ` and ${crCount} constructed-response questions in ${C.length} clusters` : '') +
+      ` from ${new Set(regents.map(q => q.exam)).size} Regents exams` + (NC.length ? `, and ${NC.length} new-format clusters (${NC.reduce((s, c) => s + c.questions.length, 0)} questions)` : '') + (mine ? `, plus ${mine} of your own` : '');
+  }
+  updateInfo();
+  const refMatch = (want, ref) => !want || (want === 'none' ? (ref === 'none' || !ref) : want === 'any' ? (!!ref && ref !== 'none') :
+    want === 'old' ? (ref === 'old' || ref === 'partial') : want === 'covered' ? ref === 'covered' : true);
+
+  function matches(q) {
+    const s = $('fSearch').value.trim().toLowerCase();
+    const kind = $('fKind').value, want = $('fRef').value;
+    if (kind === 'mc' && q.kind !== undefined) return false;
+    if (kind === 'cr' && q.kind !== 'cluster') return false;
+    if (kind === 'custom' && q.kind !== 'custom') return false;
+    if (fExam.value && q.exam !== fExam.value) return false;
+    if (fType.value === 'misc' && q.kind !== 'custom') return false;
+    if (fType.value === 'misc' && q.type !== 'misc') return false;
+    if (fUnit.value === 'misc' && q.unit !== 'misc') return false;
+    if ($('hidePicked').checked && picked.includes(q.id)) return false;
+    if (q.kind === 'cluster') {
+      if (fUnit.value && !q.units.map(String).includes(fUnit.value)) return false;
+      if (fType.value && !q.items.some(it => it.types.includes(Number(fType.value)))) return false;
+      if ($('fFig').value === '0') return false;
+      if (want === 'none' ? !q.items.every(it => refMatch('none', it.ref)) : (want && !q.items.some(it => refMatch(want, it.ref)))) return false;
+      if (s && !(q.text + ' ' + q.items.map(it => it.descriptor + ' ' + ((T[it.type] || {}).name || '') + ' ' + (it.refnote || '')).join(' ')).toLowerCase().includes(s)) return false;
+      return true;
+    }
+    if (fUnit.value && fUnit.value !== 'misc' && String(q.unit) !== fUnit.value) return false;
+    if (fType.value && fType.value !== 'misc' && !q.types.includes(Number(fType.value))) return false;
+    if ($('fFig').value === '1' && !q.has_figure) return false;
+    if ($('fFig').value === '0' && q.has_figure) return false;
+    if (!refMatch(want, q.ref)) return false;
+    if (s && !(q.text + ' ' + q.descriptor + ' ' + ((T[q.type] || {}).name || '') + ' ' + (q.refnote || '')).toLowerCase().includes(s)) return false;
+    return true;
+  }
+  const TABLE_NAMES = { 'PT-ox': 'Periodic Table oxidation states', 'PT-config': 'Periodic Table electron configurations', 'PT-mass': 'Periodic Table masses' };
+  const tableLabel = t => TABLE_NAMES[t] || `Table ${t}`;
+  function refChip(tables, ref) {
+    if (!tables || !tables.length || !ref || ref === 'none') return '';
+    const old = ref === 'old' || ref === 'partial';
+    return `<span class="ref ${old ? 'old' : ''}" title="${old ? 'Needs the 2011 reference tables; not on the 2025 edition' : 'Needed information is on the 2025 reference tables too'}">${esc(tables.join(', '))}${old ? ' · 2011' : ' · 2025 ok'}</span>`;
+  }
+
+  // ---------- custom question layout: drawing ops in inches, shared by the screen and the PDF ----------
+  const LH = 1.2, LABEL_W = 0.32, CUSTOM_PT = 10.5;
+  function layoutCustom(q, wIn, pt, perm) {
+    const ops = []; let y = 0; const lh = pt / 72 * LH, asc = pt / 72 * 0.891;
+    const para = (text, x, w) => { wrap(text, w, pt).forEach(line => { y += lh; ops.push({ t: 'text', s: line, x, y: y - (lh - asc) / 2 - 0.02, pt }); }); };
+    if (q.intro) { para(q.intro, 0, wIn); y += 0.06; }
+    if (q.diagram && q.dW && q.dH) {
+      const maxW = Math.min(wIn - 0.1, q.dW / 150), maxH = 3.6;
+      const w = Math.min(maxW, maxH * q.dW / q.dH), h = w * q.dH / q.dW;
+      y += 0.06; ops.push({ t: 'img', src: q.diagram, x: (wIn - w) / 2, y, w, h }); y += h + 0.08;
+    }
+    para(q.stem, 0, wIn); y += 0.06;
+    const order = perm || [0, 1, 2, 3];
+    const shown = order.map(i => q.choices[i] || '');
+    const two = shown.every(c => c.length <= 18) && wIn > 2.5;
+    if (two) {
+      const colW = (wIn - 0.15) / 2;
+      for (const r of [0, 1]) {
+        const y0 = y; let yMax = y;
+        [[r, 0], [r + 2, 1]].forEach(([k, c]) => {
+          y = y0; const x = c * (colW + 0.15);
+          wrap(shown[k], colW - LABEL_W, pt).forEach((line, li) => { y += lh; const by = y - (lh - asc) / 2 - 0.02; if (li === 0) ops.push({ t: 'text', s: `(${k + 1})`, x, y: by, pt }); ops.push({ t: 'text', s: line, x: x + LABEL_W, y: by, pt }); });
+          yMax = Math.max(yMax, y);
+        });
+        y = yMax + 0.01;
+      }
+    } else {
+      shown.forEach((c, k) => {
+        wrap(c, wIn - LABEL_W, pt).forEach((line, li) => { y += lh; const by = y - (lh - asc) / 2 - 0.02; if (li === 0) ops.push({ t: 'text', s: `(${k + 1})`, x: 0, y: by, pt }); ops.push({ t: 'text', s: line, x: LABEL_W, y: by, pt }); });
+        y += 0.01;
+      });
+    }
+    return { ops, h: y + 0.04, w: wIn };
+  }
+  function customHTML(lay, pt, id) {
+    const asc = pt / 72 * 0.891;
+    return `<div ${id ? `id="${id}" ` : ''}class="custom-q" style="width:${lay.w.toFixed(3)}in;height:${lay.h.toFixed(3)}in;font-size:${pt}pt">` + lay.ops.map(o => o.t === 'img'
+      ? `<img src="${o.src}" style="left:${o.x.toFixed(3)}in;top:${o.y.toFixed(3)}in;width:${o.w.toFixed(3)}in;height:${o.h.toFixed(3)}in">`
+      : `<span style="left:${o.x.toFixed(3)}in;top:${(o.y - asc).toFixed(3)}in">${esc(o.s)}</span>`).join('') + `</div>`;
+  }
+  const PERMS = []; (function gen(a, k) { if (k === a.length) { if (a.join() !== '0,1,2,3') PERMS.push(a.slice()); return; } for (let i = k; i < a.length; i++) { [a[k], a[i]] = [a[i], a[k]]; gen(a, k + 1); [a[k], a[i]] = [a[i], a[k]]; } })([0, 1, 2, 3], 0);
+  function customPerm(q) { let h = 0; for (const ch of q.id) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return PERMS[h % PERMS.length]; }
+
+  // ---------- new-format clusters: filters and cards ----------
+  const nUnit = $('nUnit'), nMode = $('nMode'), nExam = $('nExam'), nType = $('nType');
+  UORDER.forEach(u => nUnit.append(new Option(uLabel(u), u)));
+  [...new Set(NC.map(c => c.exam))].sort().reverse().forEach(e => { const c = NC.find(x => x.exam === e); nExam.append(new Option(c.sample ? 'Sample clusters (Spring 2025)' : `${c.session} ${c.year}`, e)); });
+  Object.keys(NT).map(Number).sort((a, b) => a - b).forEach(t => nType.append(new Option(`N${t}. ${NT[t].name}`, t)));
+  function nMatches(c) {
+    const s = $('nSearch').value.trim().toLowerCase();
+    if (nExam.value && c.exam !== nExam.value) return false;
+    if (nType.value && !c.questions.some(q => q.types.includes(Number(nType.value)))) return false;
+    if ($('hidePicked').checked && picked.includes(c.id)) return false;
+    const u = nUnit.value ? Number(nUnit.value) : null;
+    if (u != null) {
+      const units = c.units.map(Number);
+      if (nMode.value === 'touch' && !units.includes(u)) return false;
+      if (nMode.value === 'only' && !(units.length && units.every(x => x === u))) return false;
+      if (nMode.value === 'upto' && !units.every(x => uidx(x) <= uidx(u))) return false;   // unit-less (engineering) questions never block
+    }
+    if (s && !((c.title || '') + ' ' + c.text + ' ' + c.questions.map(q => q.descriptor + ' ' + ((NT[q.type] || {}).name || '')).join(' ')).toLowerCase().includes(s)) return false;
+    return true;
+  }
+  function renderNewList(list) {
+    const rows = NC.filter(nMatches).sort((a, b) => (a.sample - b.sample) || (a.exam < b.exam ? 1 : a.exam > b.exam ? -1 : a.group[0] - b.group[0]));
+    $('countText').textContent = `${rows.length} cluster${rows.length === 1 ? '' : 's'} shown`;
+    const frag = document.createDocumentFragment();
+    rows.forEach(c => {
+      const el = document.createElement('div');
+      el.className = 'card ncl' + (picked.includes(c.id) ? ' picked' : '');
+      const [a, b] = c.group;
+      const badges = c.units.map(u => `<span class="ubadge" title="${uLabel(u)}">U${uNum(u)}</span>`).join(' ') + (c.questions.some(q => !q.unit) ? ` <span class="ubadge none" title="Engineering / evaluation questions not tied to a unit">eng</span>` : '');
+      const thumb = c.blocks.find(bl => bl.kind === 'passage') || c.blocks[0];
+      el.innerHTML = `<div class="meta"><b>${c.sample ? 'Sample 2025' : `${c.session} ${c.year}`}</b> ${c.sample ? `Cluster ${c.id.slice(-1)}` : `Q${a}–${b}`} · ${c.n_mc} MC, ${c.n_cr} CR · ${c.pages.length} page${c.pages.length === 1 ? '' : 's'} <span style="margin-left:auto;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${badges}</span></div>
+        <div class="title">${esc(c.title || '')}</div>
+        <div class="thumb"><img data-src="${thumb.img}" alt=""></div>`;
+      el.title = (picked.includes(c.id) ? 'Click to remove this cluster from the worksheet' : 'Click to add this cluster (all of its questions, on its own pages)') + '\n' + c.questions.map(q => `Q${q.q} ${q.mc ? 'MC' : 'CR'}: ${q.descriptor}`).join('\n');
+      el.onclick = () => openPreview(c.id);
+      frag.append(el);
+    });
+    list.append(frag); lazy(list);
+  }
+  function setBank(mode) {
+    bankMode = mode; localStorage.setItem('ctb.bank', mode);
+    $('swOld').classList.toggle('on', mode === 'old'); $('swNew').classList.toggle('on', mode === 'new');
+    $('filters').hidden = mode === 'new'; $('nfilters').hidden = mode !== 'new';
+    renderList();
+  }
+  $('swOld').onclick = () => setBank('old');
+  $('swNew').onclick = () => { if (!NC.length) { alert('bank-new/new.js was not found next to the app.'); return; } setBank('new'); };
+  ['nSearch', 'nUnit', 'nMode', 'nExam', 'nType'].forEach(id => $(id).addEventListener('input', renderList));
+
+  // ---------- list of cards ----------
+  function renderList() {
+    const list = $('list'); list.innerHTML = '';
+    if (bankMode === 'new') { renderNewList(list); return; }
+    const qn = x => x.q ?? (x.group ? x.group[0] : 0);
+    const rows = Q.concat(C).filter(matches).sort((a, b) => a.exam < b.exam ? 1 : a.exam > b.exam ? -1 : qn(a) - qn(b));
+    $('countText').textContent = `${rows.length} item${rows.length === 1 ? '' : 's'} shown`;
+    const frag = document.createDocumentFragment();
+    rows.slice(0, 600).forEach(q => {
+      const c = document.createElement('div');
+      c.className = 'card' + (picked.includes(q.id) ? ' picked' : '') + (q.kind === 'cluster' ? ' cluster' : '');
+      if (q.kind === 'cluster') {
+        const [a, b] = q.group;
+        const units = q.units.map(u => 'U' + uNum(u)).join(' ');
+        const tabs = [...new Set(q.items.flatMap(it => it.tables || []))], ref = q.items.some(it => it.ref === 'old' || it.ref === 'partial') ? 'old' : q.items.some(it => it.ref === 'covered') ? 'covered' : 'none';
+        const kept = keptItems(q), drops = (dropped[q.id] || []).slice().sort((x, y) => x - y);
+        const countText = drops.length ? `${kept.length} of ${q.items.length} questions` : `${q.items.length} question${q.items.length === 1 ? '' : 's'}`;
+        c.innerHTML = `<div class="meta"><b>${q.session} ${q.year}</b> Part ${q.part} · ${a === b ? 'Q' + a : `Q${a}–${b}`} · ${countText} ${refChip(tabs, ref)}
+            <span class="tag" title="${q.units.map(uLabel).join(' / ')}">${units}</span>` +
+            (drops.length ? `<span class="drops">Left out: ${drops.map(n => `Q${n} <button data-putback="${n}">put back</button>`).join(' ')}</span>` : '') + `</div>
+          <div class="thumb">${q.passage ? `<img data-src="${q.passage.img}" alt="">` : ''}` +
+          q.items.map(it => `<img class="stem${isDropped(q.id, it.q) ? ' dropped' : ''}" data-q="${it.q}" data-src="${it.stem.img}" alt="" title="Q${it.q}: click to ${isDropped(q.id, it.q) ? 'put this question back' : 'leave this question out of the cluster'}">`).join('') + `</div>`;
+        c.title = picked.includes(q.id) ? 'Click to remove this cluster from the worksheet' : 'Click to add this cluster (passage, questions and answer space). Click a single question to leave it out.';
+        c.querySelectorAll('img.stem').forEach(im => { im.onclick = ev => { ev.stopPropagation(); toggleDrop(q.id, Number(im.dataset.q)); }; });
+        c.querySelectorAll('button[data-putback]').forEach(bt => { bt.onclick = ev => { ev.stopPropagation(); toggleDrop(q.id, Number(bt.dataset.putback)); }; });
+      } else if (q.kind === 'custom') {
+        c.className += ' custom';
+        const tn = q.type === 'misc' || !T[q.type] ? 'Misc' : T[q.type].name;
+        c.innerHTML = `<div class="meta"><b>Custom</b> ${esc(q.author || '')} <button class="edit" title="Edit this question">Edit</button> ${refChip(q.tables, q.ref)}
+            <span class="tag" title="${uLabel(q.unit)}">U${uNum(q.unit)} · ${esc(tn)}</span></div>
+          <div class="thumb">${customHTML(layoutCustom(q, 3.3, CUSTOM_PT), CUSTOM_PT)}</div>`;
+        c.querySelector('.edit').onclick = ev => { ev.stopPropagation(); openBuilder(q); };
+      } else {
+        const tn = T[q.type] ? T[q.type].name : '(untyped)';
+        c.innerHTML = `<div class="meta"><b>${q.session} ${q.year}</b> Q${q.q} ${refChip(q.tables, q.ref)}
+            <span class="tag" title="${uLabel(q.unit)}">U${uNum(q.unit)} · ${tn}</span></div>
+          <div class="thumb"><img data-src="${q.img}" alt=""></div>`;
+        c.title = (picked.includes(q.id) ? 'Click to remove from worksheet' : 'Click to add to worksheet') +
+                  (q.group ? ` (questions ${q.group[0]}–${q.group[1]} share a passage and are added together)` : '') +
+                  (q.refnote ? `\nReference tables: ${q.refnote}` : '');
+      }
+      c.onclick = () => q.kind === 'cluster' ? openPreview(q.id) : toggle(q.id);
+      frag.append(c);
+    });
+    if (rows.length > 600) { const m = document.createElement('div'); m.className = 'card'; m.style.padding = '10px 12px'; m.textContent = `Showing the first 600 of ${rows.length}. Narrow the filters to see the rest.`; frag.append(m); }
+    list.append(frag); lazy(list);
+  }
+
+  function groupIds(id) {
+    const q = byId[id];
+    if (!q || !q.group || q.kind === 'cluster' || q.kind === 'ncl') return [id];
+    return Q.filter(x => x.exam === q.exam && x.q >= q.group[0] && x.q <= q.group[1]).map(x => x.id);
+  }
+  function toggle(id) {
+    const ids = groupIds(id);
+    if (picked.includes(id)) picked = picked.filter(x => !ids.includes(x));
+    else ids.forEach(x => { if (!picked.includes(x)) picked.push(x); });
+    persist(); renderList(); renderSheet();
+  }
+  function toggleDrop(cid, qn) {
+    const c = byId[cid]; if (!c) return;
+    const set = new Set(dropped[cid] || []);
+    if (set.has(qn)) set.delete(qn); else set.add(qn);
+    if (set.size >= c.items.length) {                   // nothing left: the cluster comes off the worksheet instead
+      if (!confirm('That is the last question in this cluster. Remove the whole cluster from the worksheet?')) return;
+      picked = picked.filter(x => x !== cid); delete dropped[cid];
+    } else if (set.size) dropped[cid] = [...set]; else delete dropped[cid];
+    persist(); renderList(); renderSheet();
+  }
+  // ---------- preview a cluster before inserting it
+  let pvId = null;
+  async function openPreview(id) {
+    const c = byId[id]; if (!c) return; pvId = id;
+    const isNew = c.kind === 'ncl', onSheet = picked.includes(id);
+    $('pvTitle').textContent = isNew ? `${c.sample ? 'Sample 2025' : c.session + ' ' + c.year} · ${c.title || ''}` : `${c.session} ${c.year} · Part ${c.part} · Q${c.group[0]}${c.group[1] !== c.group[0] ? '–' + c.group[1] : ''}`;
+    $('pvHint').textContent = isNew ? `${c.questions.length} questions (${c.n_mc} MC, ${c.n_cr} CR) on ${c.pages.length} pre-laid-out page${c.pages.length === 1 ? '' : 's'}. New-format clusters are inserted whole.`
+      : 'Untick any question you want to leave out; the passage and the rest of the cluster stay together.';
+    $('pvBody').innerHTML = '<div class="hint">Loading…</div>';
+    $('pvInsert').textContent = onSheet ? 'Update' : 'Insert'; $('pvRemove').hidden = !onSheet;
+    $('preview').hidden = false;
+    const paths = isNew ? c.blocks.map(b => b.img) : [c.passage && c.passage.img].concat(c.items.flatMap(it => [it.stem.img, it.resp.img])).filter(Boolean);
+    try { await ensurePaths(paths); } catch (e) { $('pvBody').innerHTML = `<div class="hint">${esc(e.message)}</div>`; return; }
+    if (pvId !== id) return;
+    let h = '';
+    if (isNew) {
+      c.blocks.forEach(bl => { const qq = bl.kind === 'q' ? c.questions.find(x => x.q === bl.q) : null;
+        h += `<div class="pblock"><div class="plabel">${bl.kind === 'lead' ? 'Lead-in' : bl.kind === 'passage' ? 'Passage' : `Question ${bl.q} · ${qq && qq.mc ? 'multiple choice' : 'constructed response'}${qq && qq.descriptor ? ' · ' + esc(qq.descriptor) : ''}`}</div><img src="${urlOf(bl.img)}"></div>`; });
+    } else {
+      if (c.passage) h += `<div class="pblock"><div class="plabel">Passage</div><img src="${urlOf(c.passage.img)}"></div>`;
+      c.items.forEach(it => { const out = onSheet && isDropped(id, it.q);
+        h += `<div class="pq ${out ? 'out' : ''}" data-q="${it.q}"><label><input type="checkbox" data-q="${it.q}" ${out ? '' : 'checked'}>Q${it.q}</label><div style="flex:1;min-width:0"><div class="plabel">${esc(it.descriptor || '')}</div><img src="${urlOf(it.stem.img)}">${it.resp.shared_with != null ? '<div class="plabel">answer space shared with the previous question</div>' : `<img src="${urlOf(it.resp.img)}" style="margin-top:4px">`}</div></div>`; });
+    }
+    $('pvBody').innerHTML = h;
+    $('pvBody').querySelectorAll('input[data-q]').forEach(cb => cb.onchange = () => cb.closest('.pq').classList.toggle('out', !cb.checked));
+  }
+  $('pvCancel').onclick = () => { $('preview').hidden = true; };
+  $('preview').addEventListener('click', e => { if (e.target === $('preview')) $('preview').hidden = true; });
+  $('pvInsert').onclick = () => {
+    const c = byId[pvId]; if (!c) return;
+    if (c.kind === 'cluster') {
+      const out = [...$('pvBody').querySelectorAll('input[data-q]')].filter(cb => !cb.checked).map(cb => Number(cb.dataset.q));
+      if (out.length >= c.items.length) { alert('At least one question has to stay in the cluster.'); return; }
+      if (out.length) dropped[pvId] = out; else delete dropped[pvId];
+    }
+    if (!picked.includes(pvId)) picked.push(pvId);
+    $('preview').hidden = true; persist(); renderList(); renderSheet();
+  };
+  $('pvRemove').onclick = () => { picked = picked.filter(x => x !== pvId); delete dropped[pvId]; $('preview').hidden = true; persist(); renderList(); renderSheet(); };
+  function addExtra(extra) {
+    const id = `${extra.kind}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+    extras[id] = extra; picked.push(id); persist(); renderSheet();
+  }
+  $('insCol').onclick = () => addExtra({ kind: 'brk', type: 'col' });
+  $('insPage').onclick = () => addExtra({ kind: 'brk', type: 'page' });
+
+  // ---------- inserted PDF pages ----------
+  $('insPDF').onclick = () => $('filePDF').click();
+  $('filePDF').onchange = async e => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    try {
+      const bytes = new Uint8Array(await f.arrayBuffer());
+      const src = await PDFDocument.load(bytes, { ignoreEncryption: true });
+      const n = src.getPageCount();
+      let pages = [...Array(n).keys()];
+      if (n > 1) {
+        const ans = prompt(`"${f.name}" has ${n} pages. Which pages should be inserted? (e.g. 1, 2-3, or all)`, 'all');
+        if (ans == null) return;
+        if (ans.trim().toLowerCase() !== 'all') {
+          pages = []; ans.split(',').forEach(part => { const m = part.trim().match(/^(\d+)(?:\s*-\s*(\d+))?$/); if (m) { const a = +m[1], b = m[2] ? +m[2] : a; for (let i = a; i <= b; i++) if (i >= 1 && i <= n) pages.push(i - 1); } });
+          if (!pages.length) { alert('No valid page numbers.'); return; }
+        }
+      }
+      progress('Preparing PDF page…');
+      const pdfjs = window.pdfjsLib; pdfjs.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.min.js';
+      const view = await pdfjs.getDocument({ data: bytes.slice() }).promise;
+      for (const pi of pages) {
+        const one = await PDFDocument.create(); const [pg] = await one.copyPages(src, [pi]); one.addPage(pg);
+        const b64 = await one.saveAsBase64();
+        const page = await view.getPage(pi + 1); const vp = page.getViewport({ scale: 1 });
+        const scale = 850 / Math.max(vp.width, vp.height * 850 / 1100); const vp2 = page.getViewport({ scale });
+        const cv = document.createElement('canvas'); cv.width = Math.round(vp2.width); cv.height = Math.round(vp2.height);
+        await page.render({ canvasContext: cv.getContext('2d'), viewport: vp2, intent: 'print' }).promise;
+        addExtra({ kind: 'pdf', name: f.name, page: pi + 1, pages: n, pdf: b64, thumb: cv.toDataURL('image/jpeg', 0.8) });
+      }
+    } catch (err) { console.error(err); alert('That PDF could not be read: ' + err.message); }
+    progress(null);
+  };
+
+  // ---------- worksheet: pack items onto letter pages ----------
+  const PAGE_H = 10, PAGE_W = 7.5, ITEM_GAP = 0.16, GUTTER = 0.36;   // GUTTER matches --gutter in the CSS
+  let COLGAP = 0.3;                                                   // widens when answer blanks are on, so the right column's blank fits in the gap
+  const BLANK_W = 0.3, BLANK_GAP = 0.03, BLANK_IN = 0.1;   // blank ends inside the number cell, just left of a two-digit number
+  function layout(items, opts) {
+    const cols = opts.cols || 2;
+    const colW = cols === 2 ? (PAGE_W - COLGAP) / 2 : PAGE_W;
+    const pages = []; let page, y0, col, colY, bandTop, parked = [], headDone = false;
+    function newPage(pdf) {
+      page = { items: [], rules: [], pdf: pdf || null }; pages.push(page);
+      y0 = pdf ? 0 : ((!headDone || opts.headAll) ? (opts.headH || 0) : 0);
+      if (!pdf) headDone = true;
+      col = 0; colY = [y0, y0]; bandTop = y0;
+    }
+    function closeBand() {
+      const bottom = Math.max(colY[0], colY[1]);
+      const inBand = page.items.filter(p => p.y >= bandTop && !p.item.full && p.item.kind !== 'brk');
+      if (cols === 2 && inBand.length && (inBand.some(p => p.x > 0) || bottom - bandTop > 3))
+        page.rules.push({ x: colW + COLGAP / 2, y: bandTop, h: bottom - bandTop - ITEM_GAP });
+      return bottom;
+    }
+    function newBand() { const b = closeBand(); colY = [b, b]; bandTop = b; col = 0; }
+    function placeFull(it) {
+      let y = closeBand();
+      if (y + it.h > PAGE_H && page.items.length) { newPage(); y = y0; }
+      page.items.push({ item: it, x: 0, y });
+      colY = [y + it.h + ITEM_GAP, y + it.h + ITEM_GAP]; bandTop = colY[0]; col = 0;
+    }
+    function placeHalf(it) {
+      const h = it.h + ITEM_GAP;
+      while (true) {
+        if (colY[col] + it.h <= PAGE_H) { page.items.push({ item: it, x: col * (colW + COLGAP), y: colY[col] }); colY[col] += h; return; }
+        if (col === 0) { col = 1; continue; }
+        if (parked.length) { flushParked(); if (colY[0] + it.h <= PAGE_H) continue; }
+        closeBand(); newPage();
+      }
+    }
+    function placeBlock(block) {
+      const [first, ...rest] = block;
+      const need = first.h + ITEM_GAP + (first.kind === 'stim' && rest.length ? rest[0].h + ITEM_GAP : 0);
+      let y = closeBand();
+      if (y + need > PAGE_H && page.items.length) { newPage(); y = y0; }
+      if (first.full || cols === 1) { placeFull(first); }
+      else { page.items.push({ item: first, x: 0, y }); colY = [y + first.h + ITEM_GAP, y]; bandTop = y; col = 0; }
+      rest.forEach(q => { if (q.full || cols === 1) placeFull(q); else placeHalf(q); });
+    }
+    function flushParked() {
+      while (parked.length) { const u = parked.shift(); Array.isArray(u) ? placeBlock(u) : placeFull(u); }
+    }
+    const hasContent = () => page.items.some(p => p.item.kind !== 'brk');
+    newPage();
+    const units = [];
+    items.forEach(it => {
+      const last = units[units.length - 1];
+      if (it.block && Array.isArray(last) && last[0].block === it.block) last.push(it);
+      else units.push(it.block ? [it] : it);
+    });
+    units.forEach(u => {
+      if (!Array.isArray(u) && u.kind === 'brk') {
+        if (u.type === 'col') {
+          if (col === 0) { page.items.push({ item: u, x: 0, y: colY[0] }); col = 1; }
+          else { page.items.push({ item: u, x: colW + COLGAP, y: colY[1] }); flushParked(); newBand(); }
+        } else {
+          page.items.push({ item: u, x: col * (colW + COLGAP), y: colY[col] });
+          flushParked(); closeBand();
+          if (hasContent() || page.pdf) newPage(); else { colY = [y0, y0]; bandTop = y0; col = 0; }
+        }
+        return;
+      }
+      if (!Array.isArray(u) && u.kind === 'ncl') {
+        // a new-format cluster: its pre-planned pages drop in unchanged (scaled only if one is the worksheet's first page)
+        flushParked(); closeBand();
+        u.c.pages.forEach((pg, pi) => {
+          if (hasContent() || page.pdf || page.fixed) newPage();
+          page.fixed = { c: u.c, pi, i: u.i };
+          const first = pages.length === 1;
+          const k = first ? (PAGE_H - (opts.headH || 0)) / PAGE_H : 1, off = first ? (opts.headH || 0) : 0;
+          pg.forEach(it => {
+            const bl = u.c.blocks[it.b];
+            const w = Math.min(PAGE_W, bl.w_in) * k;
+            page.items.push({ item: { kind: 'nb', c: u.c, bl, i: u.i, w, h: it.h * k, k, full: true }, x: 0, y: off + it.y * k });
+          });
+          colY = [PAGE_H, PAGE_H]; bandTop = PAGE_H; col = 0;
+        });
+        newPage();
+        return;
+      }
+      if (!Array.isArray(u) && u.kind === 'pdf') {
+        flushParked(); closeBand();
+        if (hasContent()) newPage(u);
+        else { page.items = []; page.rules = []; page.pdf = u; if (pages.length === 1) headDone = false; }
+        newPage();
+        return;
+      }
+      const bandEmpty = colY[0] === y0 && colY[1] === y0;
+      if (Array.isArray(u)) { if (bandEmpty) placeBlock(u); else parked.push(u); return; }
+      if (u.full || cols === 1) { if (bandEmpty) placeFull(u); else parked.push(u); return; }
+      placeHalf(u);
+    });
+    flushParked(); closeBand();
+    while (pages.length > 1 && !pages[pages.length - 1].pdf && !pages[pages.length - 1].fixed && !pages[pages.length - 1].items.some(p => p.item.kind !== 'brk')) pages.pop();
+    return pages;
+  }
+
+  // ---------- settings ----------
+  const OPTS = ['oStart', 'oScale', 'oBlanks', 'oNote', 'oBlank', 'oKey', 'oCRKey', 'oRefBlock', 'oSrc', 'oVersion'];
+  const opt = id => { const el = $(id); return el.type === 'checkbox' ? el.checked : el.value; };
+  const setOpt = (id, v) => { const el = $(id); if (!el || v == null) return; if (el.type === 'checkbox') el.checked = !!v; else el.value = v; };
+  const getOpts = () => Object.fromEntries(OPTS.map(id => [id, opt(id)]));
+  const safeName = () => ($('oTitle').value || 'worksheet').replace(/[\\/:*?"<>|]+/g, '').trim() || 'worksheet';
+  const versionDocs = () => {
+    const v = opt('oVersion');
+    if (v === 'decoy') return { sheets: [{ v: 'A', label: 'Form A', suffix: '-A' }, { v: 'A', label: 'Form B', suffix: '-B' }], keys: [{ v: 'A', suffix: '-key' }] };
+    if (v === 'ab' || v === 'abnolabel') { const lab = v === 'ab'; return { sheets: [{ v: 'A', label: lab ? 'Form A' : null, suffix: '-A' }, { v: 'B', label: lab ? 'Form B' : null, suffix: '-B' }], keys: [{ v: 'A', suffix: '-A-key' }, { v: 'B', suffix: '-B-key' }] }; }
+    return { sheets: [{ v: 'A', label: null, suffix: '' }], keys: [{ v: 'A', suffix: '-key' }] };
+  };
+  function versionHint() {
+    const d = versionDocs(); const n = d.sheets.length + d.keys.length;
+    const noB = picked.filter(id => byId[id] && byId[id].kind === undefined && !byId[id].b).length + picked.reduce((s, id) => s + (byId[id] && byId[id].kind === 'ncl' ? byId[id].questions.filter(q => q.mc && !q.b).length : 0), 0);
+    $('versionHint').textContent = `Make PDFs will produce ${n} file${n === 1 ? '' : 's'}: ` + d.sheets.map(s => safeName() + s.suffix + '.pdf').concat(d.keys.map(k => safeName() + k.suffix + '.pdf')).join(', ') +
+      ((opt('oVersion') === 'ab' || opt('oVersion') === 'abnolabel') && noB ? `. ${noB} chosen question${noB === 1 ? ' has' : 's have'} no shuffled version and will read the same in both forms.` : '');
+  }
+  $('btnSettings').onclick = () => { versionHint(); $('settings').hidden = false; };
+  $('sClose').onclick = () => { $('settings').hidden = true; };
+  $('settings').addEventListener('click', e => { if (e.target === $('settings')) $('settings').hidden = true; });
+
+  // ---------- the worksheet model: items, pages, numbering, key rows ----------
+  function buildModel() {
+    COLGAP = opt('oBlank') ? 0.55 : 0.3;
+    const scale = Number(opt('oScale')) / 100, start = Number(opt('oStart')) || 1;
+    const headH = 0.5 + (opt('oNote') ? 0.32 : 0.1);
+    const items = []; const shown = new Set();
+    const halfW = (PAGE_W - COLGAP) / 2;
+    const addQ = (q, i) => {
+      if (q.kind === 'custom') {
+        const w = (q.width === 'full' ? PAGE_W : halfW) - GUTTER;
+        const lay = layoutCustom(q, w, CUSTOM_PT * scale), layB = layoutCustom(q, w, CUSTOM_PT * scale, customPerm(q));
+        const h = Math.min(PAGE_H - 0.2, Math.max(lay.h, layB.h));
+        items.push({ kind: 'q', q, i, custom: true, lay, layB, pt: CUSTOM_PT * scale, w, h, indent: 0, full: q.width === 'full', block: null });
+        return;
+      }
+      const maxW = (q.width === 'full' ? PAGE_W : halfW) - GUTTER + (q.indent_in || 0) * scale + 0.05;
+      const sc = Math.min(1, (PAGE_H - 0.2) / (q.h_in * scale), maxW / (q.w_in * scale));
+      items.push({ kind: 'q', q, i, img: q.img, imgB: q.b ? q.b.img : q.img, w: q.w_in * scale * sc, h: q.h_in * scale * sc, indent: (q.indent_in || 0) * scale * sc,
+                   full: q.width === 'full', block: q.stimulus || null });
+    };
+    const fitFull = (w_in, h_in, indent) => Math.min(1, (PAGE_H - 0.2) / (h_in * scale), (PAGE_W - GUTTER + (indent || 0) * scale + 0.05) / (w_in * scale));
+    picked.forEach((id, i) => {
+      if (extras[id]) { items.push(Object.assign({ i, id, h: 0, w: 0 }, extras[id])); return; }
+      const q = byId[id]; if (!q) return;
+      if (q.kind === 'ncl') { items.push({ kind: 'ncl', c: q, i, h: 0, w: 0 }); return; }
+      if (q.kind === 'cluster') {
+        if (q.passage) {
+          const p = q.passage, k = fitFull(p.w_in, p.h_in, 0);
+          items.push({ kind: 'stim', stim: p, slots: p.slots || [], img: p.img, w: p.w_in * scale * k, h: p.h_in * scale * k, full: true, block: q.id, i });
+        }
+        const kept = keptItems(q);
+        if (!kept.length) return;
+        kept.forEach(it => {
+          const ks = fitFull(it.stem.w_in, it.stem.h_in, it.stem.indent_in), kr = fitFull(it.resp.w_in, it.resp.h_in, 0);
+          const sharedResp = it.resp.shared_with != null && kept.some(o => o.q === it.resp.shared_with);
+          const sw = it.stem.w_in * scale * ks, sh = it.stem.h_in * scale * ks, rw = sharedResp ? 0 : it.resp.w_in * scale * kr, rh = sharedResp ? 0 : it.resp.h_in * scale * kr;
+          items.push({ kind: 'cq', c: q, cq: it, i, qnum: it.q, img: it.stem.img, w: Math.max(sw, rw), h: sh + (rh ? 0.06 + rh : 0), sw, sh, rw, rh,
+                       indent: (it.stem.indent_in || 0) * scale * ks, full: true, block: q.id });
+        });
+        return;
+      }
+      if (q.stimulus) {
+        if (shown.has(q.stimulus)) return;
+        shown.add(q.stimulus); const s = stimById[q.stimulus];
+        items.push({ kind: 'stim', stim: s, slots: s.slots || [], img: s.img, w: s.w_in * scale, h: s.h_in * scale, full: s.width === 'full', block: q.stimulus });
+        picked.forEach((id2, i2) => { const q2 = byId[id2]; if (q2 && q2.stimulus === q.stimulus) addQ(q2, i2); });
+        return;
+      }
+      addQ(q, i);
+    });
+    const pages = layout(items, { cols: 2, headH });
+    let n = start; const order = [];
+    pages.forEach(pg => pg.items.forEach(p => {
+      if (p.item.kind === 'q') { p.item.n = n++; const q = p.item.q; order.push({ n: p.item.n, q, kind: q.kind, answer: q.answer, answerB: q.kind === 'custom' ? customPerm(q).indexOf(q.answer - 1) + 1 : (q.b ? q.b.answer : q.answer), tables: q.tables || [], ref: q.ref, refnote: q.refnote }); }
+      if (p.item.kind === 'nb' && p.item.bl.kind === 'q') {
+        p.item.n = n++; const c = p.item.c, qq = c.questions.find(x => x.q === p.item.bl.q);
+        order.push({ n: p.item.n, ncl: true, c, qq, cr: !qq.mc, answer: qq.answer, answerB: qq.b ? qq.b.answer : qq.answer, key: qq.key, session: c.session, year: c.year, q: qq.q, unit: qq.unit, type: qq.type, tables: [], ref: 'none' });
+      }
+      if (p.item.kind === 'cq') { p.item.n = n++; const it = p.item.cq, c = p.item.c;
+        order.push({ n: p.item.n, cr: true, session: c.session, year: c.year, q: it.q, unit: it.unit, type: it.type, key: it.key, tables: it.tables || [], ref: it.ref, refnote: it.refnote }); }
+    }));
+    const tabs = {};
+    order.forEach(o => (o.tables || []).forEach(t => { tabs[t] = tabs[t] || { nums: [], old: false }; tabs[t].nums.push(o.n); if (o.ref === 'old' || o.ref === 'partial') tabs[t].old = true; }));
+    const keyItems = [];
+    order.filter(o => o.cr && o.key).forEach(o => {
+      const imgs = o.key.imgs || [o.key];
+      imgs.forEach((im, ii) => {
+        const k = Math.min(1, (PAGE_W - GUTTER) / im.w_in, (PAGE_H - 0.6) / im.h_in);
+        keyItems.push({ kind: 'key', n: ii === 0 ? o.n : '', img: im.img, w: im.w_in * k, h: im.h_in * k, full: true });
+      });
+    });
+    const keyPages = opt('oCRKey') && keyItems.length ? layout(keyItems, { cols: 1, headH: 0.5, headAll: true }) : [];
+    return { items, pages, order, tabs, keyPages, scale, start, headH, nq: order.length, blank: !!opt('oBlank') };
+  }
+  function sourceText(o) {
+    return o.ncl ? `New Regents ${o.c.sample ? 'sample' : o.session + ' ' + o.year} · ${esc(o.c.title || '')} Q${o.q}${o.type ? ' · N' + o.type : ''}` : o.kind === 'custom' ? `Custom question${o.q.author ? ' · ' + o.q.author : ''}` : o.cr ? `${o.session} ${o.year} Q${o.q} · U${uNum(o.unit)} · ${(T[o.type] || {}).name || ''}` : `${o.q.session} ${o.q.year} Q${o.q.q} · U${uNum(o.q.unit)} · ${(T[o.q.type] || {}).name || ''}`;
+  }
+  function refLines(tabs) {
+    const keys = Object.keys(tabs).sort((a, b) => (a.startsWith('PT') - b.startsWith('PT')) || a.localeCompare(b));
+    return keys.map(t => ({ t, label: tableLabel(t), nums: tabs[t].nums, old: tabs[t].old }));
+  }
+  // new-format lead-in sentence, typeset with the worksheet's first and last numbers of that cluster
+  function leadLayout(it, M) {
+    const qs = [].concat(...M.pages.map(x => x.items)).filter(o => o.item.kind === 'nb' && o.item.c === it.c && o.item.bl.kind === 'q').map(o => o.item.n);
+    const a = qs.length ? Math.min(...qs) : '', b = qs.length ? Math.max(...qs) : '';
+    const text = it.bl.tpl.replace('{a}', a).replace('{b}', b);
+    const pt = 10 * it.k, w = it.w - 0.4 * it.k, lh = pt / 72 * 1.25, asc = pt / 72 * 0.891;
+    const ops = []; let y = 0.02;
+    wrap(text, w, pt).forEach(line => { y += lh; ops.push({ t: 'text', s: line, x: 0, y: y - (lh - asc) / 2, pt }); });
+    return { ops, h: y + 0.02, w, pt };
+  }
+  const slotOwner = (M, it, sl) => {
+    const all = [].concat(...M.pages.map(x => x.items)).filter(o => o.item.block === it.block && (o.item.kind === 'q' || o.item.kind === 'cq'));
+    const qn = o => o.item.kind === 'q' ? o.item.q.q : o.item.qnum;
+    return all.find(o => qn(o) === sl.q) || all.sort((a, b) => Math.abs(qn(a) - sl.q) - Math.abs(qn(b) - sl.q))[0];
+  };
+  const neededPaths = () => {
+    const paths = [];
+    picked.forEach(id => { const q = byId[id]; if (!q) return; if (q.kind === 'ncl') { q.blocks.forEach(bl => paths.push(bl.img)); q.questions.forEach(qq => { if (qq.b) paths.push(qq.b.img); if (qq.key) (qq.key.imgs || []).forEach(im => paths.push(im.img)); }); return; } if (q.kind === 'cluster') { if (q.passage) paths.push(q.passage.img); q.items.forEach(it => { paths.push(it.stem.img, it.resp.img); if (it.key) paths.push(it.key.img); }); } else if (q.kind !== 'custom') { paths.push(q.img); if (q.b) paths.push(q.b.img); if (q.stimulus) paths.push(stimById[q.stimulus].img); } });
+    return paths;
+  };
+
+  // ---------- screen rendering ----------
+  let renderToken = 0;
+  async function renderSheet() {
+    const wrap = $('sheet'); $('empty').hidden = picked.length > 0; wrap.hidden = picked.length === 0;
+    if (!picked.length) { wrap.innerHTML = ''; $('status').textContent = ''; $('tables').style.display = 'none'; return; }
+    const token = ++renderToken;
+    try { await ensurePaths(neededPaths()); } catch (e) { alert(e.message); }
+    if (token !== renderToken) return;
+    const M = buildModel();
+    const title = esc($('oTitle').value);
+    const ctlFor = it => `<div class="ctl"><button data-act="up" ${it.i === 0 ? 'disabled' : ''} title="Move up">&#9650;</button><button data-act="down" ${it.i === picked.length - 1 ? 'disabled' : ''} title="Move down">&#9660;</button>` +
+      (it.kind === 'cq' ? `<button data-act="drop" data-q="${it.qnum}" title="Leave this question out (the rest of the cluster stays)">&#10005;</button>` : `<button data-act="del" title="Remove">&#10005;</button>`) + `</div>`;
+    let html = ''; let headShown = false;
+    M.pages.forEach((pg, pi) => {
+      if (pg.pdf) {
+        const it = pg.pdf;
+        html += `<div class="page pdfpage" data-i="${it.i}"><img class="full" src="${it.thumb}" alt=""><span class="cap">${esc(it.name)} — page ${it.page} of ${it.pages}</span>${ctlFor(it)}</div>`;
+        return;
+      }
+      html += `<div class="page${pg.fixed ? ' fixed' : ''}"><div class="body">`;
+      if (pg.fixed) {
+        const f = pg.fixed;
+        html += `<div class="item" data-i="${f.i}" style="left:0;top:0;width:7.5in;height:0"><div class="ctl" style="top:2px;right:2px;display:flex"><span style="font-size:11px;background:var(--maroon-tint);color:var(--maroon-deep);padding:0 8px;border-radius:999px;border:1px solid var(--tint-line);line-height:18px">${esc(f.c.title || 'cluster')} · page ${f.pi + 1}/${f.c.pages.length}</span>` +
+          `<button data-act="up" ${f.i === 0 ? 'disabled' : ''} title="Move up">&#9650;</button><button data-act="down" ${f.i === picked.length - 1 ? 'disabled' : ''} title="Move down">&#9660;</button><button data-act="del" title="Remove this cluster">&#10005;</button></div></div>`;
+      }
+      if (!headShown) {
+        headShown = true;
+        html += `<div class="head"><span class="title">${title}</span>` +
+          (opt('oBlanks') ? `<span class="blanks">Name ____________________________ &nbsp; Date __________ &nbsp; Period _____</span>` : '') + `</div>`;
+        if (opt('oNote')) html += `<div class="note">Some questions may require the use of the Reference Tables for Physical Setting/Chemistry.</div>`;
+      }
+      pg.rules.forEach(r => { html += `<div class="rule" style="left:${r.x.toFixed(3)}in;top:${r.y.toFixed(3)}in;height:${Math.max(0, r.h).toFixed(3)}in"></div>`; });
+      pg.items.forEach(p => {
+        const it = p.item;
+        if (it.kind === 'nb' && it.bl.kind === 'lead' && it.bl.tpl) {
+          const lay = leadLayout(it, M);
+          html += `<div style="position:absolute;left:${(p.x + 0.28 * it.k).toFixed(3)}in;top:${p.y.toFixed(3)}in">${customHTML(lay, lay.pt)}</div>`;
+          return;
+        }
+        if (it.kind === 'nb') {
+          html += `<img src="${urlOf(it.bl.img)}" style="position:absolute;left:${p.x.toFixed(3)}in;top:${p.y.toFixed(3)}in;width:${it.w.toFixed(3)}in;height:${it.h.toFixed(3)}in">`;
+          const kk = it.w / it.bl.w_in;
+          (it.bl.slots || []).forEach(sl => {
+            let num = null;
+            if (it.bl.kind === 'q') num = it.n;
+            else { const owner = [].concat(...M.pages.map(x => x.items)).filter(o => o.item.kind === 'nb' && o.item.c === it.c && o.item.bl.kind === 'q'); const near = owner.sort((a, b) => Math.abs(a.item.bl.q - sl.q) - Math.abs(b.item.bl.q - sl.q))[0]; num = near ? near.item.n : ''; }
+            const right = p.x + (sl.x_in + sl.w_in) * kk + 0.02, top = p.y + sl.y_in * kk, hh = sl.h_in * kk;
+            html += `<span class="nnum" style="right:${(PAGE_W - right).toFixed(3)}in;top:${top.toFixed(3)}in;height:${hh.toFixed(3)}in;line-height:${hh.toFixed(3)}in;min-width:${(sl.w_in * kk + 0.04).toFixed(3)}in;font-size:${(sl.size_pt * kk).toFixed(1)}pt">${num}</span>`;
+            if (M.blank && it.bl.kind === 'q') { const qq = it.c.questions.find(x => x.q === it.bl.q); if (qq && qq.mc) html += `<span class="ablank" style="left:${(p.x + sl.x_in * kk - BLANK_W - BLANK_GAP).toFixed(3)}in;top:${(top + hh - 0.02).toFixed(3)}in;width:${BLANK_W}in"></span>`; }
+          });
+          return;
+        }
+        const ctl = (it.kind === 'q' || it.kind === 'cq' || it.kind === 'brk' || (it.kind === 'stim' && it.i !== undefined)) ? ctlFor(it) : '';
+        if (it.kind === 'brk') {
+          const w = it.type === 'col' ? (PAGE_W - COLGAP) / 2 : PAGE_W;
+          html += `<div class="item" data-i="${it.i}" style="left:${p.x.toFixed(3)}in;top:${p.y.toFixed(3)}in;width:${w.toFixed(3)}in"><div class="brk" style="width:100%">${it.type === 'col' ? 'Column break' : 'Page break'}</div>${ctl}</div>`;
+          return;
+        }
+        let overlay = '';
+        if (it.kind === 'stim' && it.slots) {
+          const k = it.w / (it.stim.w_in || it.w);
+          it.slots.forEach(sl => {
+            const qi = slotOwner(M, it, sl); if (!qi) return;
+            overlay += `<span class="slot" style="left:${(GUTTER + sl.x_in * k - 0.02).toFixed(3)}in;top:${(sl.y_in * k).toFixed(3)}in;min-width:${(sl.w_in * k + 0.04).toFixed(3)}in;height:${(sl.h_in * k).toFixed(3)}in;line-height:${(sl.h_in * k).toFixed(3)}in;font-size:${(sl.size_pt * k).toFixed(1)}pt">${qi.item.n}</span>`;
+          });
+        }
+        const body = it.kind === 'cq'
+          ? `<div class="cq"><img src="${urlOf(it.img)}" style="width:${it.sw.toFixed(3)}in;height:${it.sh.toFixed(3)}in;margin-left:${(-(it.indent || 0)).toFixed(3)}in">` +
+            (it.rh ? `<img class="resp" src="${urlOf(it.cq.resp.img)}" style="width:${it.rw.toFixed(3)}in;height:${it.rh.toFixed(3)}in">` : '') + `</div>`
+          : it.custom ? customHTML(it.lay, it.pt)
+          : `<img src="${urlOf(it.img)}" style="width:${it.w.toFixed(3)}in;height:${it.h.toFixed(3)}in;margin-left:${(-(it.indent || 0)).toFixed(3)}in">`;
+        html += `<div class="item" data-i="${it.i ?? ''}" style="left:${p.x.toFixed(3)}in;top:${p.y.toFixed(3)}in">` +
+          `<div class="num">${(it.kind === 'q' || it.kind === 'cq') ? it.n : '&nbsp;'}</div>${body}${overlay}${ctl}` +
+          (M.blank && it.kind === 'q' ? `<span class="ablank" style="left:${(BLANK_IN - BLANK_W).toFixed(3)}in;top:0.13in;width:${BLANK_W}in"></span>` : '') + `</div>`;
+      });
+      html += `<div class="pnum">${pi + 1}</div></div></div>`;
+    });
+    if (opt('oKey')) {
+      const src = opt('oSrc'), crPages = opt('oCRKey');
+      const chunks = []; for (let i = 0; i < M.order.length; i += 40) chunks.push(M.order.slice(i, i + 40));
+      html += `<div class="page keypage"><div class="body key"><h2>${title} — Answer Key</h2><div class="tables">`;
+      chunks.forEach(ch => {
+        html += `<table><tr><th>#</th><th>Answer</th>${src ? '<th>Source</th>' : ''}</tr>`;
+        ch.forEach(o => { html += `<tr><td>${o.n}</td><td>${o.cr ? `<span class="src">${o.key && crPages ? 'see scoring pages' : 'see rating guide'}</span>` : (o.answer ?? '?')}</td>${src ? `<td class="src">${esc(sourceText(o))}</td>` : ''}</tr>`; });
+        html += `</table>`;
+      });
+      html += `</div>`;
+      if (opt('oRefBlock')) {
+        const lines = refLines(M.tabs);
+        html += `<div class="refblock"><b>Reference tables needed</b> (2011 edition letters; <span class="old">bold</span> = not on the 2025 edition)<br>` +
+          (lines.length ? lines.map(l => `<span class="${l.old ? 'old' : ''}">${esc(l.label)}</span>: ${l.nums.join(', ')}`).join(' &nbsp;·&nbsp; ') : 'none beyond the periodic table') + `</div>`;
+      }
+      html += `</div></div>`;
+    }
+    M.keyPages.forEach((pg, ki) => {
+      html += `<div class="page keypage"><div class="body key"><h2>${title} — Constructed-response scoring (from the NYSED rating guides)${ki ? ', continued' : ''}</h2>`;
+      pg.items.forEach(p => { const it = p.item; html += `<div class="item" style="left:0;top:${p.y.toFixed(3)}in"><div class="num">${it.n}</div><img src="${urlOf(it.img)}" style="width:${it.w.toFixed(3)}in;height:${it.h.toFixed(3)}in"></div>`; });
+      html += `</div></div>`;
+    });
+    wrap.innerHTML = html;
+    const np = M.pages.length;
+    $('status').textContent = `${M.nq} question${M.nq === 1 ? '' : 's'} · ${np} page${np === 1 ? '' : 's'}` + (opt('oVersion') !== 'single' ? ' · ' + { decoy: 'Forms A/B (same order)', ab: 'versions A and B', abnolabel: 'versions A and B (unlabeled)' }[opt('oVersion')] : '');
+    const lines = refLines(M.tabs); const tb = $('tables');
+    if (lines.length) { tb.style.display = 'block'; tb.innerHTML = `<b>Reference tables needed:</b> ` + lines.map(l => `${l.old ? '<b>' : ''}${esc(l.label)}${l.old ? '</b>' : ''} (${l.nums.join(', ')})`).join(' · ') + ` &nbsp;<span style="opacity:.8">bold = only on the 2011 edition</span>`; }
+    else tb.style.display = 'none';
+  }
+  $('sheet').addEventListener('click', e => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const holder = b.closest('[data-i]'); const i = Number(holder.dataset.i), act = b.dataset.act;
+    if (act === 'drop') { toggleDrop(picked[i], Number(b.dataset.q)); return; }
+    if (act === 'del') { const id = picked[i]; picked.splice(i, 1); if (extras[id]) delete extras[id]; delete dropped[id]; }
+    if (act === 'up' && i > 0) [picked[i - 1], picked[i]] = [picked[i], picked[i - 1]];
+    if (act === 'down' && i < picked.length - 1) [picked[i + 1], picked[i]] = [picked[i], picked[i + 1]];
+    persist(); renderList(); renderSheet();
+  });
+
+  // ---------- persistence ----------
+  function persist() {
+    try {
+      localStorage.setItem('ctb.picked', JSON.stringify(picked)); localStorage.setItem('ctb.title', $('oTitle').value);
+      localStorage.setItem('ctb.opts', JSON.stringify(getOpts())); localStorage.setItem('ctb.dropped', JSON.stringify(dropped));
+      try { localStorage.setItem('ctb.extras', JSON.stringify(extras)); }
+      catch (e) { localStorage.setItem('ctb.extras', JSON.stringify(Object.fromEntries(Object.entries(extras).filter(([k, v]) => v.kind !== 'pdf')))); }
+    } catch (e) { }
+  }
+  try {
+    const p = JSON.parse(localStorage.getItem('ctb.picked') || '[]');
+    extras = JSON.parse(localStorage.getItem('ctb.extras') || '{}');
+    dropped = JSON.parse(localStorage.getItem('ctb.dropped') || '{}');
+    picked = p.filter(id => byId[id] || extras[id]);
+    const t = localStorage.getItem('ctb.title'); if (t) $('oTitle').value = t;
+    const o = JSON.parse(localStorage.getItem('ctb.opts') || '{}'); Object.entries(o).forEach(([k, v]) => setOpt(k, v));
+  } catch (e) { picked = []; extras = {}; dropped = {}; }
+  if (location.hash.startsWith('#load=')) {
+    picked = []; extras = {}; dropped = {};
+    decodeURIComponent(location.hash.slice(6)).split(',').forEach(tok => {
+      if (tok === 'brk:col' || tok === 'brk:page') { const id = 'brk_' + Math.random().toString(36).slice(2); extras[id] = { kind: 'brk', type: tok.slice(4) }; picked.push(id); }
+      else if (/^drop:/.test(tok)) { const m = tok.match(/^drop:(.+):(\d+)$/); if (m) (dropped[m[1]] = dropped[m[1]] || []).push(Number(m[2])); }
+      else if (byId[tok]) picked.push(tok);
+    });
+    persist();
+  }
+
+  $('btnSave').onclick = () => {
+    const data = { title: $('oTitle').value, questions: picked, extras, dropped, options: getOpts(), version: 3 };
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
+    a.download = safeName() + '.json'; a.click();
+  };
+  $('btnLoad').onclick = () => $('fileLoad').click();
+  $('fileLoad').onchange = e => {
+    const f = e.target.files[0]; if (!f) return;
+    f.text().then(txt => {
+      try { const d = JSON.parse(txt);
+        extras = d.extras || {}; dropped = d.dropped || {};
+        picked = (d.questions || []).filter(id => byId[id] || extras[id]);
+        if (d.title) $('oTitle').value = d.title;
+        if (d.options) Object.entries(d.options).forEach(([k, v]) => { if (OPTS.includes(k)) setOpt(k, v); else if (k === 'start') setOpt('oStart', v); else if (k === 'scale') setOpt('oScale', v); });
+        const missing = (d.questions || []).length - picked.length;
+        if (missing) alert(`${missing} item(s) in that list are not in this question bank and were skipped.`);
+        persist(); renderList(); renderSheet();
+      } catch (err) { alert('That file is not a saved worksheet list.'); }
+    });
+    e.target.value = '';
+  };
+  $('btnClear').onclick = () => { if (!picked.length || confirm('Remove everything from the worksheet?')) { picked = []; extras = {}; dropped = {}; persist(); renderList(); renderSheet(); } };
+  $('btnPrint').onclick = () => { if (picked.length) window.print(); };
+
+  // ---------- PDF output ----------
+  function progress(msg) { const p = $('progress'); p.hidden = !msg; p.textContent = msg || ''; }
+  const download = (bytes, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 60000); };
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  function showDownloads(files) {
+    const list = $('dlList'); list.innerHTML = '';
+    files.forEach(([bytes, name]) => {
+      const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+      const row = document.createElement('div'); row.className = 'row'; row.style.justifyContent = 'space-between';
+      row.innerHTML = `<span>${esc(name)} <span class="hint">(${(bytes.length / 1048576).toFixed(1)} MB)</span></span><span><a href="${url}" download="${esc(name)}"><button class="small primary">Save</button></a> <a href="${url}" target="_blank" rel="noopener"><button class="small">Open</button></a></span>`;
+      list.appendChild(row);
+    });
+    $('dl').hidden = false;
+    // try the automatic route too; browsers that allow it will save straight away
+    files.slice(0, 1).forEach(([bytes, name]) => download(bytes, name));
+  }
+  $('dlClose').onclick = () => { $('dl').hidden = true; };
+  $('dl').addEventListener('click', e => { if (e.target === $('dl')) $('dl').hidden = true; });
+  const PT = 72, MARGIN = 36, PH = 792;
+  async function makePDF(M, mode, version, label) {
+    const doc = await PDFDocument.create(); doc.registerFontkit(window.fontkit);
+    const F = await doc.embedFont(FONTB.serif, { subset: true }), FB = await doc.embedFont(FONTB.bold, { subset: true }), FI = await doc.embedFont(FONTB.italic, { subset: true });
+    const imgCache = {};
+    async function image(path) {
+      if (imgCache[path]) return imgCache[path];
+      let im;
+      if (path.startsWith('data:')) { const b = b64bytes(path.split(',')[1]); im = /^data:image\/jpe?g/i.test(path) ? await doc.embedJpg(b) : await doc.embedPng(b); }
+      else im = await doc.embedPng(bytesOf(path));
+      return (imgCache[path] = im);
+    }
+    const X = xin => MARGIN + xin * PT, Y = (yin, hin) => PH - MARGIN - yin * PT - (hin || 0) * PT;
+    const text = (page, s, xin, baseIn, size, font, opts) => page.drawText(clean(s), Object.assign({ x: X(xin), y: PH - MARGIN - baseIn * PT, size, font, color: rgb(0, 0, 0) }, opts || {}));
+    const textRight = (page, s, xRightIn, baseIn, size, font) => page.drawText(clean(s), { x: X(xRightIn) - font.widthOfTextAtSize(clean(s), size), y: PH - MARGIN - baseIn * PT, size, font });
+    const line = (page, x0, y0, x1, y1, t) => page.drawLine({ start: { x: X(x0), y: PH - MARGIN - y0 * PT }, end: { x: X(x1), y: PH - MARGIN - y1 * PT }, thickness: t || 1, color: rgb(0, 0, 0) });
+    const rectW = (page, xin, yin, win, hin) => page.drawRectangle({ x: X(xin), y: Y(yin, hin), width: win * PT, height: hin * PT, color: rgb(1, 1, 1), borderWidth: 0 });
+    const title = $('oTitle').value;
+    const numAt = (page, n, xin, yin) => textRight(page, String(n), xin + GUTTER - 0.06, yin + 0.01 + 10.5 / 72, 11, F);
+    async function drawCustom(page, it, xin, yin) {
+      const lay = version === 'B' ? it.layB : it.lay;
+      for (const o of lay.ops) {
+        if (o.t === 'img') { const im = await image(o.src); page.drawImage(im, { x: X(xin + o.x), y: Y(yin + o.y, o.h), width: o.w * PT, height: o.h * PT }); }
+        else text(page, o.s, xin + o.x, yin + o.y, o.pt, F);
+      }
+    }
+    if (mode === 'sheet') {
+      let first = true;
+      for (let pi = 0; pi < M.pages.length; pi++) {
+        const pg = M.pages[pi];
+        if (pg.pdf) { const src = await PDFDocument.load(b64bytes(pg.pdf.pdf)); const [cp] = await doc.copyPages(src, [0]); doc.addPage(cp); continue; }
+        const page = doc.addPage([612, PH]);
+        if (first) {
+          first = false;
+          text(page, title, 0, 0.3, 14, FB);
+          if (label) text(page, label, FB.widthOfTextAtSize(clean(title), 14) / PT + 0.2, 0.3, 11, F);
+          if (opt('oBlanks')) textRight(page, 'Name ____________________________   Date __________   Period _____', PAGE_W, 0.3, 11, F);
+          line(page, 0, 0.4, PAGE_W, 0.4, 1.5);
+          if (opt('oNote')) text(page, 'Some questions may require the use of the Reference Tables for Physical Setting/Chemistry.', 0, 0.62, 10, FI);
+        }
+        pg.rules.forEach(r => { if (r.h > 0) line(page, r.x, r.y, r.x, r.y + r.h, 0.8); });
+        for (const p of pg.items) {
+          const it = p.item;
+          if (it.kind === 'brk') continue;
+          if (it.kind === 'nb' && it.bl.kind === 'lead' && it.bl.tpl) {
+            const lay = leadLayout(it, M);
+            for (const o of lay.ops) text(page, o.s, p.x + 0.28 * it.k + o.x, p.y + o.y, o.pt, F);
+            continue;
+          }
+          if (it.kind === 'nb') {
+            const qq = it.bl.kind === 'q' ? it.c.questions.find(x => x.q === it.bl.q) : null;
+            const src = (version === 'B' && qq && qq.b) ? qq.b.img : it.bl.img;
+            const im = await image(src); page.drawImage(im, { x: X(p.x), y: Y(p.y, it.h), width: it.w * PT, height: it.h * PT });
+            const kk = it.w / it.bl.w_in;
+            for (const sl of (it.bl.slots || [])) {
+              let num = it.bl.kind === 'q' ? it.n : (() => { const owner = [].concat(...M.pages.map(x => x.items)).filter(o => o.item.kind === 'nb' && o.item.c === it.c && o.item.bl.kind === 'q'); const near = owner.sort((a, b) => Math.abs(a.item.bl.q - sl.q) - Math.abs(b.item.bl.q - sl.q))[0]; return near ? near.item.n : ''; })();
+              const right = p.x + (sl.x_in + sl.w_in) * kk + 0.02, top = p.y + sl.y_in * kk, hh = sl.h_in * kk, size = sl.size_pt * kk;
+              const s = String(num), w = F.widthOfTextAtSize(s, size) / PT;
+              rectW(page, right - Math.max(w, sl.w_in * kk) - 0.03, top, Math.max(w, sl.w_in * kk) + 0.05, hh);
+              text(page, s, right - w, top + hh - hh * 0.22, size, F);
+              if (M.blank && it.bl.kind === 'q') { const qq = it.c.questions.find(x => x.q === it.bl.q); if (qq && qq.mc) { const bx = p.x + sl.x_in * kk - BLANK_GAP; line(page, bx - BLANK_W, top + hh - 0.02, bx, top + hh - 0.02, 0.7); } }
+            }
+            continue;
+          }
+          // number and answer blank go on AFTER the image: an indented crop can reach under the number
+          const numbering = () => { if (it.kind === 'q' || it.kind === 'cq') numAt(page, it.n, p.x, p.y); if (M.blank && it.kind === 'q') line(page, p.x + BLANK_IN - BLANK_W, p.y + 0.14, p.x + BLANK_IN, p.y + 0.14, 0.7); };
+          if (it.custom) { await drawCustom(page, it, p.x + GUTTER, p.y); numbering(); continue; }
+          if (it.kind === 'cq') {
+            const im = await image(it.img); page.drawImage(im, { x: X(p.x + GUTTER - (it.indent || 0)), y: Y(p.y, it.sh), width: it.sw * PT, height: it.sh * PT });
+            if (it.rh) { const ir = await image(it.cq.resp.img); page.drawImage(ir, { x: X(p.x + GUTTER), y: Y(p.y + it.sh + 0.06, it.rh), width: it.rw * PT, height: it.rh * PT }); }
+            numbering(); continue;
+          }
+          const path = (it.kind === 'q' && version === 'B') ? it.imgB : it.img;
+          const im = await image(path);
+          page.drawImage(im, { x: X(p.x + GUTTER - (it.indent || 0)), y: Y(p.y, it.h), width: it.w * PT, height: it.h * PT });
+          numbering();
+          if (it.kind === 'stim' && it.slots) {
+            const k = it.w / (it.stim.w_in || it.w);
+            it.slots.forEach(sl => {
+              const qi = slotOwner(M, it, sl); if (!qi) return;
+              const bx = p.x + GUTTER + sl.x_in * k - 0.02, by = p.y + sl.y_in * k, bw = sl.w_in * k + 0.04, bh = sl.h_in * k, size = sl.size_pt * k;
+              rectW(page, bx, by, bw, bh);
+              const s = String(qi.item.n), w = F.widthOfTextAtSize(s, size) / PT;
+              text(page, s, bx + (bw - w) / 2, by + bh - bh * 0.22, size, F);
+            });
+          }
+        }
+        text(page, String(pi + 1), PAGE_W / 2 - 0.05, PAGE_H + 0.3, 9, F, { color: rgb(.27, .27, .27) });
+      }
+    } else {
+      const src = opt('oSrc'), crPages = opt('oCRKey');
+      if (opt('oKey')) {
+        const page = doc.addPage([612, PH]);
+        text(page, `${title} — Answer Key`, 0, 0.22, 13, FB);
+        const rowH = 0.21, colW = src ? 3.9 : 1.6; let x = 0;
+        for (let i = 0; i < M.order.length; i += 40) {
+          const ch = M.order.slice(i, i + 40); let y = 0.45;
+          const cols = src ? [0.5, 1.1, colW - 1.6] : [0.5, 1.1];
+          const cell = (s, cx, cw, yy, font, size, color) => { const w = font.widthOfTextAtSize(clean(s), size) / PT; text(page, s, x + cx + (cw - w) / 2, yy + 0.15, size, font, color ? { color } : {}); };
+          const rowLines = yy => { line(page, x, yy, x + colW, yy, 0.6); };
+          rowLines(y); cell('#', 0, cols[0], y, FB, 10.5); cell('Answer', cols[0], cols[1], y, FB, 10.5); if (src) cell('Source', cols[0] + cols[1], cols[2], y, FB, 10.5);
+          y += rowH; rowLines(y);
+          ch.forEach(o => {
+            cell(String(o.n), 0, cols[0], y, F, 10.5);
+            const a = o.cr ? (o.key && crPages ? 'see scoring pages' : 'see rating guide') : String((version === 'B' ? o.answerB : o.answer) ?? '?');
+            cell(a, cols[0], cols[1], y, F, o.cr ? 8 : 10.5, o.cr ? rgb(.33, .33, .33) : null);
+            if (src) { let s = sourceText(o); while (F.widthOfTextAtSize(clean(s), 8) / PT > cols[2] - 0.1 && s.length > 4) s = s.slice(0, -2); cell(s, cols[0] + cols[1], cols[2], y, F, 8, rgb(.33, .33, .33)); }
+            y += rowH; rowLines(y);
+          });
+          [0, cols[0], cols[0] + cols[1], colW].forEach(v => line(page, x + v, 0.45, x + v, y, 0.6));
+          x += colW + 0.25;
+        }
+        if (opt('oRefBlock')) {
+          const lines = refLines(M.tabs);
+          let y = 0.45 + rowH * (Math.min(40, M.order.length) + 1) + 0.3;
+          line(page, 0, y, PAGE_W, y, 0.8); y += 0.22;
+          text(page, 'Reference tables needed', 0, y, 10.5, FB); text(page, '(2011 edition letters; bold = not on the 2025 edition)', 1.75, y, 10.5, F); y += 0.24;
+          const parts = lines.length ? lines.map(l => ({ s: `${l.label}: ${l.nums.join(', ')}`, old: l.old })) : [{ s: 'none beyond the periodic table', old: false }];
+          let cx = 0;
+          for (const part of parts) {
+            const font = part.old ? FB : F, w = font.widthOfTextAtSize(clean(part.s), 10.5) / PT + 0.3;
+            if (cx + w > PAGE_W && cx > 0) { cx = 0; y += 0.2; }
+            text(page, part.s, cx, y, 10.5, font); cx += w;
+          }
+        }
+      }
+      for (let ki = 0; ki < M.keyPages.length; ki++) {
+        const pg = M.keyPages[ki], page = doc.addPage([612, PH]);
+        text(page, `${title} — Constructed-response scoring (from the NYSED rating guides)${ki ? ', continued' : ''}`, 0, 0.22, 12, FB);
+        for (const p of pg.items) { const it = p.item; numAt(page, it.n, 0, p.y); const im = await image(it.img); page.drawImage(im, { x: X(GUTTER), y: Y(p.y, it.h), width: it.w * PT, height: it.h * PT }); }
+      }
+      if (!doc.getPageCount()) { const page = doc.addPage([612, PH]); text(page, `${title} — Answer Key`, 0, 0.22, 13, FB); text(page, 'No key pages were selected in Worksheet settings.', 0, 0.5, 11, F); }
+    }
+    return doc.save();
+  }
+  $('btnPDF').onclick = async () => {
+    if (!picked.length) return;
+    try {
+      progress('Loading images…'); await ensurePaths(neededPaths());
+      const M = buildModel(); const d = versionDocs(); const files = [];
+      for (const s of d.sheets) { progress(`Building ${safeName()}${s.suffix}.pdf…`); files.push([await makePDF(M, 'sheet', s.v, s.label), safeName() + s.suffix + '.pdf']); }
+      for (const k of d.keys) { progress(`Building ${safeName()}${k.suffix}.pdf…`); files.push([await makePDF(M, 'key', k.v, null), safeName() + k.suffix + '.pdf']); }
+      progress(null); showDownloads(files);
+    } catch (err) { console.error(err); progress(null); alert('The PDF could not be made: ' + err.message); }
+  };
+
+  // ---------- custom question builder ----------
+  let editing = null, pendingDiagram = null;
+  const mUnit = $('mUnit'), mType = $('mType');
+  UORDER.forEach(u => mUnit.append(new Option(uLabel(u), u)));
+  mUnit.append(new Option('Misc / other', 'misc'));
+  function fillBuilderTypes(keep) {
+    const u = mUnit.value; mType.innerHTML = '';
+    Object.keys(T).map(Number).sort((a, b) => a - b).forEach(t => { if (u === 'misc' || String(T[t].unit) === u) mType.append(new Option(`${t}. ${T[t].name}`, t)); });
+    mType.append(new Option('Misc / other', 'misc'));
+    mType.value = keep != null && [...mType.options].some(o => o.value === String(keep)) ? String(keep) : 'misc';
+  }
+  mUnit.addEventListener('input', () => { fillBuilderTypes(); previewBuilder(); });
+  function formQuestion() {
+    return {
+      intro: $('mIntro').value.trim(), stem: $('mStem').value.trim(),
+      choices: ['mC1', 'mC2', 'mC3', 'mC4'].map(id => $(id).value.trim()), answer: Number($('mAns').value),
+      width: $('mWidth').value, unit: mUnit.value === 'misc' ? 'misc' : Number(mUnit.value), type: mType.value === 'misc' ? 'misc' : Number(mType.value),
+      ref: $('mRef').value, tables: $('mRef').value === 'none' ? [] : $('mTables').value.split(/[,\s]+/).map(s => s.trim().toUpperCase().replace(/^TABLE/, '')).filter(Boolean),
+      author: $('mAuthor').value.trim().toUpperCase(),
+      diagram: pendingDiagram ? pendingDiagram.src : (editing && editing.diagram) || null,
+      dW: pendingDiagram ? pendingDiagram.w : (editing && editing.dW) || 0, dH: pendingDiagram ? pendingDiagram.h : (editing && editing.dH) || 0,
+    };
+  }
+  function previewBuilder() {
+    const q = formQuestion(); const full = q.width === 'full';
+    $('mPreview').outerHTML = customHTML(layoutCustom(Object.assign({ id: 'x' }, q), full ? 7 : 3.2, CUSTOM_PT), CUSTOM_PT, 'mPreview');
+  }
+  function openBuilder(q) {
+    editing = q || null; pendingDiagram = null;
+    $('mTitle').textContent = q ? 'Edit question' : 'New multiple-choice question';
+    $('mIntro').value = q ? q.intro || '' : ''; $('mStem').value = q ? q.stem : '';
+    ['mC1', 'mC2', 'mC3', 'mC4'].forEach((id, i) => { $(id).value = q ? q.choices[i] : ''; });
+    $('mAns').value = q ? q.answer : 1; $('mWidth').value = q ? q.width : 'half'; $('mAuthor').value = q ? q.author || '' : (localStorage.getItem('ctb.author') || '');
+    $('mRef').value = q ? (q.ref || 'none') : 'none'; $('mTables').value = q ? (q.tables || []).join(', ') : '';
+    mUnit.value = q ? String(q.unit) : 'misc'; fillBuilderTypes(q ? q.type : 'misc');
+    $('mDiagram').value = ''; $('mDiagramInfo').textContent = q && q.diagram ? 'Current diagram kept. Choose a file to replace it.' : 'PNG or JPG. It prints centered under the intro line; use a clean, cropped image.';
+    $('mDelete').hidden = !q;
+    previewBuilder(); $('modal').hidden = false; $('mStem').focus();
+  }
+  $('mDiagram').onchange = e => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => { const im = new Image(); im.onload = () => { pendingDiagram = { src: r.result, w: im.naturalWidth, h: im.naturalHeight }; $('mDiagramInfo').textContent = `${f.name} (${im.naturalWidth}×${im.naturalHeight} px)`; previewBuilder(); }; im.src = r.result; };
+    r.readAsDataURL(f);
+  };
+  ['mIntro', 'mStem', 'mC1', 'mC2', 'mC3', 'mC4', 'mAns', 'mWidth', 'mType', 'mAuthor', 'mRef', 'mTables'].forEach(id => $(id).addEventListener('input', previewBuilder));
+  $('mCancel').onclick = () => { $('modal').hidden = true; };
+  $('modal').addEventListener('click', e => { if (e.target === $('modal')) $('modal').hidden = true; });
+  function saveCustomStore() {
+    const mine = Q.filter(q => q.kind === 'custom').map(q => ({ id: q.id, intro: q.intro, stem: q.stem, choices: q.choices, answer: q.answer, width: q.width,
+      unit: q.unit, type: q.type, ref: q.ref, tables: q.tables, author: q.author, diagram: q.diagram, dW: q.dW, dH: q.dH, created: q.created, updated: q.updated }));
+    try { localStorage.setItem('ctb.custom', JSON.stringify(mine)); }
+    catch (e) { alert('Your browser storage is full, so this question could not be saved locally. Use "Export my questions" and keep the file in the bank folder instead.'); }
+    return mine;
+  }
+  $('mSave').onclick = () => {
+    const q = formQuestion();
+    if (!q.stem || q.choices.some(c => !c)) { alert('Please fill in the question and all four choices.'); return; }
+    if (q.author) localStorage.setItem('ctb.author', q.author);
+    const now = Date.now();
+    if (editing) { decorate(Object.assign(editing, q, { updated: now })); }
+    else {
+      const nq = decorate(Object.assign({ id: 'custom_' + now.toString(36), created: now, updated: now, q: Q.filter(x => x.kind === 'custom').length + 1 }, q));
+      Q.push(nq); reindex();
+      if (!picked.includes(nq.id)) picked.push(nq.id);
+    }
+    saveCustomStore(); persist(); fillExams(); updateInfo(); $('modal').hidden = true; renderList(); renderSheet();
+  };
+  $('mDelete').onclick = () => {
+    if (!editing || !confirm('Delete this question from your bank?')) return;
+    const i = Q.indexOf(editing); if (i >= 0) Q.splice(i, 1);
+    picked = picked.filter(id => id !== editing.id); reindex(); saveCustomStore(); persist(); fillExams();
+    $('modal').hidden = true; renderList(); renderSheet();
+  };
+  $('btnNew').onclick = () => openBuilder(null);
+  $('mExport').onclick = () => { const mine = saveCustomStore(); if (!mine.length) { alert('No custom questions yet.'); return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['window.CUSTOM = ' + JSON.stringify(mine) + ';'], { type: 'text/javascript' })); a.download = 'custom.js'; a.click(); };
+
+  ['fSearch', 'fExam', 'fFig', 'fKind', 'fRef', 'hidePicked'].forEach(id => $(id).addEventListener('input', renderList));
+  fType.addEventListener('input', renderList);
+  fUnit.addEventListener('input', () => { fillTypes(); renderList(); });
+  ['oTitle'].concat(OPTS).forEach(id => $(id).addEventListener('input', () => { persist(); renderSheet(); if (!$('settings').hidden) versionHint(); }));
+
+  setBank(bankMode); renderSheet();
+  if (location.hash.includes('new')) openBuilder(null);
+  window.CTB = { buildModel, renderSheet, makePDF, versionDocs, get picked() { return picked; }, set picked(v) { picked = v; persist(); renderSheet(); } };
+})();
+</script>
+</body>
+</html>
