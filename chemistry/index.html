@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Chem Test Builder</title>
+<title>Chem Test Builder — text edition</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   :root {
@@ -97,10 +97,20 @@
   .page .head .blanks { font-size: 11pt; }
   .page .note { font-family: "LibSerif", "Times New Roman", Times, serif; font-size: 10pt; font-style: italic; height: 0.28in; padding-top: 0.06in; }
   .page .pnum { position: absolute; bottom: -0.3in; width: 100%; text-align: center; font-family: "LibSerif", "Times New Roman", Times, serif; font-size: 9pt; color: #444; }
-  .item { position: absolute; display: flex; align-items: flex-start; }
+  .item { position: absolute; display: block; }
+  .item .qbody { margin-left: var(--gutter); }
+  .item .num { position: absolute; left: 0; width: var(--gutter); }
+  .page.land { width: 11in; height: 8.5in; }
+  .page.land .body { width: 10in; height: 7.5in; }
+  .custom-q .f-b { font-weight: bold; } .custom-q .f-i { font-style: italic; } .custom-q .f-m { font-family: "LibSym", "LibSerif", serif; }
+  .custom-q .ln { position: absolute; border-top: 1px solid #000; height: 0; } .custom-q .ln.v { border-top: 0; border-left: 1px solid #000; width: 0; }
+  .custom-q .rc { position: absolute; border: 1px solid #000; }
+  .card .thumb .custom-q { overflow: hidden; }
+  .card .thumb .stem { cursor: pointer; border-left: 3px solid var(--tint-line); padding-left: 6px; margin: 6px 0 0 8%; }
+  .card .thumb .stem.dropped { opacity: .3; border-left-color: var(--gray); }
+  #pvBody .custom-q { background: #fff; }
   .item .ablank, .page .ablank { position: absolute; border-bottom: 1px solid #000; height: 0; }
-  .item .num { flex: 0 0 var(--gutter); text-align: right; padding-right: 0.06in; font-family: "LibSerif", "Times New Roman", Times, serif;
-               font-size: 11pt; line-height: 1.1; padding-top: 0.01in; position: relative; z-index: 1; }
+  .item .num { text-align: right; padding-right: 0.06in; font-family: "LibSerif", "Times New Roman", Times, serif; line-height: 1; z-index: 1; }
   .item img { display: block; }
   .item .ctl { position: absolute; right: -2px; top: -2px; display: none; gap: 3px; z-index: 2; }
   .item:hover .ctl { display: flex; }
@@ -130,7 +140,7 @@
   #pvBody .pq { display: flex; gap: 12px; align-items: flex-start; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin: 8px 0; }
   #pvBody .pq label { flex: none; font-size: 12px; color: var(--soft); display: flex; flex-direction: column; align-items: center; gap: 4px; width: 64px; }
   #pvBody .pq label input { accent-color: var(--maroon); width: 18px; height: 18px; }
-  #pvBody .pq.out img { opacity: .3; }
+  #pvBody .pq.out .custom-q { opacity: .3; }
   #pvBody .pblock { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin: 8px 0; }
   #pvBody .plabel { font-size: 11px; color: var(--soft); margin-bottom: 4px; }
   .modal { position: fixed; inset: 0; background: rgba(26,20,20,.45); display: grid; place-items: center; z-index: 50; }
@@ -163,7 +173,7 @@
   #progress[hidden] { display: none; }
 
   @media print {
-    @page { size: letter; margin: 0; }
+    @page { size: auto; margin: 0; }
     body { display: block; background: #fff; height: auto; }
     header, #browser, #toolbar, #tables, .item .ctl, .page.pdfpage .ctl, .page.pdfpage .cap, #empty, .modal, #progress, .item .brk { display: none !important; }
     #work, #sheetwrap { display: block; overflow: visible; padding: 0; height: auto; }
@@ -176,7 +186,7 @@
 <body>
 <header>
   <div class="badge" title="Orchard Park CSD — Science">OP</div>
-  <h1>Chemistry test builder</h1>
+  <h1>Chemistry test builder <span style="opacity:.7;font-size:14px">text edition</span></h1>
   <span class="sub" id="bankinfo"></span><span class="sub" id="whoami" style="margin-left:8px;opacity:1;font-weight:bold"></span>
   <span class="spacer"></span>
   <button id="btnNew" title="Write your own multiple-choice question and add it to the bank">New question…</button>
@@ -185,6 +195,7 @@
   <input type="file" id="fileLoad" accept=".json" hidden>
   <button id="btnClear">Clear</button>
   <button id="btnPrint" title="Prints the on-screen worksheet (version A, no key) straight from the browser">Print</button>
+  <button id="btnWord" title="Makes editable Word files (.docx): worksheet(s) and key(s). Word reflows the text, so pages differ from the PDF">Make Word</button>
   <button class="primary" id="btnPDF" title="Makes the PDF files: worksheet(s) and key(s), named after the title">Make PDFs</button>
 </header>
 
@@ -227,7 +238,7 @@
   <div id="tables"></div>
   <div id="sheetwrap">
     <div id="empty">Click a question on the left to add it to the worksheet. Click it again to take it off.<br>
-      <span style="font-size:12px">Use <i>Insert</i> for column or page breaks and your own PDF pages, and <i>Worksheet settings…</i> for numbering, size, answer keys and A/B versions.</span></div>
+      <span style="font-size:12px">Questions are typeset from text, so they reflow to the layout and size you choose in <i>Worksheet settings…</i>. Use <i>Insert</i> for column or page breaks and your own PDF pages.</span></div>
     <div id="sheet" hidden></div>
   </div>
 </section>
@@ -270,7 +281,7 @@
 </div>
 <div id="dl" class="modal" hidden>
   <div class="dialog narrow">
-    <h2>Your PDFs are ready</h2>
+    <h2>Your files are ready</h2>
     <div class="hint" style="margin-bottom:10px">Click each file to save it. If nothing happens, your browser is blocking downloads from this page: use <b>Open</b> instead, then save or print from the viewer.</div>
     <div id="dlList"></div>
     <div class="actions"><span class="spacer"></span><button id="dlClose" class="primary">Done</button></div>
@@ -282,7 +293,9 @@
     <h2>Worksheet settings</h2>
     <h3>Layout</h3>
     <div class="row"><label>Start numbering at</label><input type="number" id="oStart" value="1" min="1"></div>
-    <div class="row"><label>Question size</label><input type="number" id="oScale" value="100" min="60" max="120" step="5"><span class="hint">% (100 = exactly as printed on the exam)</span></div>
+    <div class="row"><label>Layout</label><select id="oLayout"><option value="default">Default (two columns; questions keep their printed width)</option><option value="wide">Force wide (every question written out across the page)</option></select></div>
+    <div class="row"><label>Size</label><select id="oSize"><option value="normal">Normal (11.5 pt, as printed)</option><option value="large">Large (14 pt)</option><option value="enlarged">Enlarged (16 pt, landscape pages, like the NYSED large-type edition)</option></select></div>
+    <div class="row"><input type="checkbox" id="oFill" checked><label for="oFill">Fill columns: balance the two columns and let a short question move ahead of a wide one so no column is left empty (may renumber slightly)</label></div>
     <div class="row"><input type="checkbox" id="oBlanks" checked><label for="oBlanks">Name / date / period line</label></div>
     <div class="row"><input type="checkbox" id="oNote" checked><label for="oNote">"Some questions may require the use of the Reference Tables" note</label></div>
     <div class="row"><input type="checkbox" id="oBlank"><label for="oBlank">Answer blank in the margin before each multiple-choice number ( ___ 4. ) for quick grading</label></div>
@@ -316,6 +329,13 @@
       <label>(3) <input type="text" id="mC3"></label>
       <label>(2) <input type="text" id="mC2"></label>
       <label>(4) <input type="text" id="mC4"></label>
+      <label class="full">Pictures for the choices (optional, e.g. four diagrams; the text above becomes each picture's caption if you leave it, or leave the text blank)
+        <span class="cimgs" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <span>(1) <input type="file" id="mD1" accept="image/*" style="width:150px"><button type="button" class="small cimgclear" data-k="0" hidden>clear</button></span>
+          <span>(2) <input type="file" id="mD2" accept="image/*" style="width:150px"><button type="button" class="small cimgclear" data-k="1" hidden>clear</button></span>
+          <span>(3) <input type="file" id="mD3" accept="image/*" style="width:150px"><button type="button" class="small cimgclear" data-k="2" hidden>clear</button></span>
+          <span>(4) <input type="file" id="mD4" accept="image/*" style="width:150px"><button type="button" class="small cimgclear" data-k="3" hidden>clear</button></span>
+        </span><span class="hint" id="mCimgInfo"></span></label>
       <label>Correct answer <select id="mAns"><option value="1">(1)</option><option value="2">(2)</option><option value="3">(3)</option><option value="4">(4)</option></select></label>
       <label>Width <select id="mWidth"><option value="half">Half page (column)</option><option value="full">Full width</option></select></label>
       <label>Unit <select id="mUnit"></select></label>
@@ -340,6 +360,9 @@
 <script src="lib/pdf.worker.min.js"></script>
 <script src="lib/pdf.min.js"></script>
 <script src="lib/fonts.js"></script>
+<script src="lib/textpdf.js"></script>
+<script src="lib/docx.umd.js"></script>
+<script src="lib/textdocx.js"></script>
 <script src="bank/bank.js"></script>
 <script src="bank-new/new.js" onerror="window.BANK_NEW = null"></script>
 <script src="bank/unit-map.js" onerror="window.UNIT_MAP = null"></script>
@@ -386,21 +409,25 @@
   const uidx = u => UORDER.indexOf(Number(u));
   const uNum = u => u === 'misc' || u == null ? '?' : (uidx(u) >= 0 ? uidx(u) + 1 : u);      // displayed unit number = position in the order
   const uLabel = u => u === 'misc' || u == null ? 'Misc / other' : `Unit ${uNum(u)}: ${U[u] || ''}`;
-  let bankMode = localStorage.getItem('ctb.bank') === 'new' && NC.length ? 'new' : 'old';
+  let bankMode = localStorage.getItem('ttb.bank') === 'new' && NC.length ? 'new' : 'old';
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   // ---------- fonts: Liberation Serif (metric-compatible with Times) for the screen and the PDFs ----------
   const b64bytes = b64 => { const bin = atob(b64); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; };
-  const FONTB = { serif: b64bytes(window.FONTS.serif), bold: b64bytes(window.FONTS.serifBold), italic: b64bytes(window.FONTS.serifItalic) };
+  const FONTB = { serif: b64bytes(window.FONTS.serif), bold: b64bytes(window.FONTS.serifBold), italic: b64bytes(window.FONTS.serifItalic), symbol: window.FONTS.symbol ? b64bytes(window.FONTS.symbol) : null };
   document.head.insertAdjacentHTML('beforeend', `<style>
     @font-face { font-family: "LibSerif"; src: url(data:font/ttf;base64,${window.FONTS.serif}); }
     @font-face { font-family: "LibSerif"; font-weight: bold; src: url(data:font/ttf;base64,${window.FONTS.serifBold}); }
-    @font-face { font-family: "LibSerif"; font-style: italic; src: url(data:font/ttf;base64,${window.FONTS.serifItalic}); }</style>`);
+    @font-face { font-family: "LibSerif"; font-style: italic; src: url(data:font/ttf;base64,${window.FONTS.serifItalic}); }
+    @font-face { font-family: "LibSym"; src: url(data:font/otf;base64,${window.FONTS.symbol}); }</style>`);
   const measureDoc = await PDFDocument.create(); measureDoc.registerFontkit(window.fontkit);
   const MF = await measureDoc.embedFont(FONTB.serif);
   const CHARSET = new Set(MF.getCharacterSet());
   const clean = s => Array.from(String(s ?? '')).map(ch => (CHARSET.has(ch.codePointAt(0)) || ch === '\n') ? ch : '?').join('');
   const textW = (s, pt) => MF.widthOfTextAtSize(s, pt) / 72;     // inches
+  // the text renderer (shared with the PDF): questions come from bank-text/<exam>.js, images as base64 in the same files
+  const TEXT = {};
+  const ENG = await TextPDF.create({ PDFLib: window.PDFLib, fontkit: window.fontkit, fonts: FONTB, image: path => bytesOf(path) });
   function wrap(text, wIn, pt) {
     const out = [];
     for (const para of clean(text).split('\n')) {
@@ -419,20 +446,27 @@
     return out;
   }
 
-  // ---------- image data: bank/data/YYYY-MM.js files, loaded when first needed ----------
+  // ---------- question text and figures: bank-text/<exam>.js files, loaded when first needed ----------
   const IMGS = {}, loading = {};
-  const examOf = path => { const m = String(path).match(/^img(?:-b)?\/(PSC-[^_]+)_/); return m ? m[1] : (String(path).match(/(\d{4}-\d{2})_/) || [])[1]; };
+  // exam of a question / cluster id or of an image path: "2012-01_Q09", "img/2012-01_Q09_1.png", "PSC-S2025_C1Q03r"
+  const examOf = s => { const m = String(s).match(/^(?:img(?:-b)?\/)?(PSC-[^_]+)_/); return m ? m[1] : (String(s).match(/(\d{4}-\d{2})_/) || [])[1]; };
   function ensureExam(exam) {
     if (!exam) return Promise.resolve();
     if (!loading[exam]) loading[exam] = new Promise((res, rej) => {
-      const s = document.createElement('script'); s.src = (window.SITE_BASE || '') + (exam.startsWith('PSC-') ? `bank-new/data/${exam}.js` : `bank/data/${exam}.js`);
-      s.onload = () => { const d = (window.BANKIMG || {})[exam] || {}; for (const p in d) IMGS[p] = { b64: d[p] }; if (window.BANKIMG) delete window.BANKIMG[exam]; res(); };
-      s.onerror = () => rej(new Error(`${exam.startsWith('PSC-') ? 'bank-new' : 'bank'}/data/${exam}.js is missing`));
+      const s = document.createElement('script'); s.src = (window.SITE_BASE || '') + `bank-text/${exam}.js`;
+      s.onload = () => {
+        const d = (window.TEXTBANK || {})[exam] || {};
+        for (const p in (d.img || {})) IMGS[p] = { b64: d.img[p] };
+        ['mc', 'stim', 'cr', 'ncl'].forEach(k => { for (const id in (d[k] || {})) TEXT[id] = d[k][id]; });
+        if (window.TEXTBANK) delete window.TEXTBANK[exam]; res();
+      };
+      s.onerror = () => rej(new Error(`bank-text/${exam}.js is missing`));
       document.head.appendChild(s);
     });
     return loading[exam];
   }
   const ensurePaths = paths => Promise.all([...new Set(paths.map(examOf).filter(Boolean))].map(ensureExam));
+  const ensureIds = ids => ensurePaths(ids);
   function bytesOf(path) {
     const e = IMGS[path]; if (!e) return null;
     if (!e.bytes) { e.bytes = b64bytes(e.b64); delete e.b64; }
@@ -445,23 +479,24 @@
     if (!e.url) e.url = URL.createObjectURL(new Blob([bytesOf(path)], { type: 'image/png' }));
     return e.url;
   }
+  // thumbnails are typeset lazily once the exam's text file has loaded
   const io = new IntersectionObserver(entries => entries.forEach(en => {
     if (!en.isIntersecting) return;
-    const img = en.target; io.unobserve(img); const p = img.dataset.src;
-    ensureExam(examOf(p)).then(() => { img.src = urlOf(p); }).catch(() => { img.alt = 'image data missing'; });
+    const el = en.target; io.unobserve(el); const id = el.dataset.tid;
+    ensureExam(examOf(id)).then(() => { el.innerHTML = thumbHTML(id, el); wireThumb(el, id); }).catch(e => { el.innerHTML = `<span class="hint">${esc(e.message)}</span>`; });
   }), { root: $('list'), rootMargin: '400px' });
-  const lazy = root => root.querySelectorAll('img[data-src]').forEach(img => io.observe(img));
+  const lazy = root => root.querySelectorAll('.thumb[data-tid]').forEach(el => io.observe(el));
 
   // ---------- teacher-written questions ----------
   function decorate(q) {
     return Object.assign(q, { kind: 'custom', exam: 'custom', session: 'Custom', year: 9999,
       types: q.type === 'misc' || q.type == null ? [] : [Number(q.type)], has_figure: !!q.diagram, descriptor: 'Custom question',
-      ref: q.ref || 'none', tables: q.tables || [], refnote: '', text: [q.intro, q.stem].concat(q.choices).join(' ') });
+      ref: q.ref || 'none', tables: q.tables || [], refnote: '', has_figure: !!q.diagram || !!(q.cimgs && q.cimgs.some(Boolean)), text: [q.intro, q.stem].concat(q.choices).join(' ') });
   }
   function loadCustom() {
     const byIdC = {};
     (window.CUSTOM || []).forEach(q => { byIdC[q.id] = q; });
-    if (!SHARED) { try { JSON.parse(localStorage.getItem('ctb.custom') || '[]').forEach(q => { if (!byIdC[q.id] || (q.updated || 0) >= (byIdC[q.id].updated || 0)) byIdC[q.id] = q; }); } catch (e) { } }
+    if (!SHARED) { try { JSON.parse(localStorage.getItem('ttb.custom') || '[]').forEach(q => { if (!byIdC[q.id] || (q.updated || 0) >= (byIdC[q.id].updated || 0)) byIdC[q.id] = q; }); } catch (e) { } }
     return Object.values(byIdC).sort((a, b) => (a.created || 0) - (b.created || 0)).map((q, i) => decorate(Object.assign(q, { q: i + 1 })));
   }
   const CUSTOM = loadCustom();
@@ -583,11 +618,43 @@
     }
     return { ops, h: y + 0.04, w: wIn };
   }
-  function customHTML(lay, pt, id) {
-    const asc = pt / 72 * 0.891;
-    return `<div ${id ? `id="${id}" ` : ''}class="custom-q" style="width:${lay.w.toFixed(3)}in;height:${lay.h.toFixed(3)}in;font-size:${pt}pt">` + lay.ops.map(o => o.t === 'img'
-      ? `<img src="${o.src}" style="left:${o.x.toFixed(3)}in;top:${o.y.toFixed(3)}in;width:${o.w.toFixed(3)}in;height:${o.h.toFixed(3)}in">`
-      : `<span style="left:${o.x.toFixed(3)}in;top:${(o.y - asc).toFixed(3)}in">${esc(o.s)}</span>`).join('') + `</div>`;
+  function opsHTML(lay, id, cls) {
+    const f3 = v => v.toFixed(3);
+    return `<div ${id ? `id="${id}" ` : ''}class="custom-q ${cls || ''}" style="width:${f3(lay.w)}in;height:${f3(lay.h)}in">` + lay.ops.map(o => {
+      if (o.t === 'img') return `<img src="${urlOf(o.src)}" style="left:${f3(o.x)}in;top:${f3(o.y)}in;width:${f3(o.w)}in;height:${f3(o.h)}in">`;
+      if (o.t === 'line') return Math.abs(o.y1 - o.y0) < 1e-6
+        ? `<div class="ln" style="left:${f3(o.x0)}in;top:${f3(o.y0)}in;width:${f3(o.x1 - o.x0)}in;border-top-width:${(o.tk || 0.6).toFixed(1)}px"></div>`
+        : `<div class="ln v" style="left:${f3(o.x0)}in;top:${f3(o.y0)}in;height:${f3(o.y1 - o.y0)}in;border-left-width:${(o.tk || 0.6).toFixed(1)}px"></div>`;
+      if (o.t === 'rect') return `<div class="rc" style="left:${f3(o.x)}in;top:${f3(o.y)}in;width:${f3(o.w)}in;height:${f3(o.h)}in"></div>`;
+      if (o.t === 'harp') return '';
+      return `<span class="f-${o.f || 'r'}" style="left:${f3(o.x)}in;top:${f3(o.y - o.pt / 72 * 0.891)}in;font-size:${o.pt}pt">${esc(o.s)}</span>`;
+    }).join('') + `</div>`;
+  }
+  const customHTML = (lay, pt, id) => opsHTML(lay, id);
+  const THUMB_PT = 10.5;
+  const stemLay = (blocks, w, pt) => ENG.layoutBlocks({ blocks }, w, pt, {});
+  function thumbHTML(id, el) {
+    const q = byId[id]; if (!q) return '';
+    if (q.kind === 'cluster') {
+      const t = TEXT[id]; if (!t) return '<span class="hint">no text for this cluster</span>';
+      const pblocks = [].concat(t.lead ? [{ t: 'p', runs: t.lead.runs }] : [], t.blocks || []);
+      let h = pblocks.length ? opsHTML(ENG.layoutBlocks({ blocks: pblocks }, 3.7, THUMB_PT, { nums: { a: q.group[0], b: q.group[1] } })) : '';
+      q.items.forEach(it => { const ti = (t.items || []).find(x => x.q === it.q); if (!ti) return;
+        h += `<div class="stem${isDropped(id, it.q) ? ' dropped' : ''}" data-q="${it.q}" title="Q${it.q}: click to ${isDropped(id, it.q) ? 'put this question back' : 'leave this question out of the cluster'}">${opsHTML(ENG.layoutBlocks({ blocks: ti.blocks }, 3.3, THUMB_PT, { credit: ti.credit }))}</div>`; });
+      return h;
+    }
+    if (q.kind === 'ncl') {
+      const t = TEXT[id]; if (!t) return '<span class="hint">no text for this cluster</span>';
+      const first = (t.blocks || []).find(b => b.t === 'passage');
+      const blocks = [].concat(t.lead ? [{ t: 'p', runs: t.lead.runs }] : [], first ? first.blocks : []);
+      const lay = ENG.layoutBlocks({ blocks }, 3.7, THUMB_PT, { nums: { a: q.group[0], b: q.group[1] } });
+      return `<div style="max-height:180px;overflow:hidden">${opsHTML(lay)}</div>`;
+    }
+    const t = TEXT[id]; if (!t) return '<span class="hint">no text for this question</span>';
+    return opsHTML(ENG.layoutBlocks(t, 3.7, THUMB_PT, {}));
+  }
+  function wireThumb(el, id) {
+    el.querySelectorAll('.stem[data-q]').forEach(st => { st.onclick = ev => { ev.stopPropagation(); toggleDrop(id, Number(st.dataset.q)); }; });
   }
   const PERMS = []; (function gen(a, k) { if (k === a.length) { if (a.join() !== '0,1,2,3') PERMS.push(a.slice()); return; } for (let i = k; i < a.length; i++) { [a[k], a[i]] = [a[i], a[k]]; gen(a, k + 1); [a[k], a[i]] = [a[i], a[k]]; } })([0, 1, 2, 3], 0);
   function customPerm(q) { let h = 0; for (const ch of q.id) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return PERMS[h % PERMS.length]; }
@@ -621,10 +688,9 @@
       el.className = 'card ncl' + (picked.includes(c.id) ? ' picked' : '');
       const [a, b] = c.group;
       const badges = c.units.map(u => `<span class="ubadge" title="${uLabel(u)}">U${uNum(u)}</span>`).join(' ') + (c.questions.some(q => !q.unit) ? ` <span class="ubadge none" title="Engineering / evaluation questions not tied to a unit">eng</span>` : '');
-      const thumb = c.blocks.find(bl => bl.kind === 'passage') || c.blocks[0];
       el.innerHTML = `<div class="meta"><b>${c.sample ? 'Sample 2025' : `${c.session} ${c.year}`}</b> ${c.sample ? `Cluster ${c.id.slice(-1)}` : `Q${a}–${b}`} · ${c.n_mc} MC, ${c.n_cr} CR · ${c.pages.length} page${c.pages.length === 1 ? '' : 's'} <span style="margin-left:auto;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${badges}</span></div>
         <div class="title">${esc(c.title || '')}</div>
-        <div class="thumb"><img data-src="${thumb.img}" alt=""></div>`;
+        <div class="thumb" data-tid="${c.id}"></div>`;
       el.title = (picked.includes(c.id) ? 'Click to remove this cluster from the worksheet' : 'Click to add this cluster (all of its questions, on its own pages)') + '\n' + c.questions.map(q => `Q${q.q} ${q.mc ? 'MC' : 'CR'}: ${q.descriptor}`).join('\n');
       el.onclick = () => openPreview(c.id);
       frag.append(el);
@@ -632,7 +698,7 @@
     list.append(frag); lazy(list);
   }
   function setBank(mode) {
-    bankMode = mode; localStorage.setItem('ctb.bank', mode);
+    bankMode = mode; localStorage.setItem('ttb.bank', mode);
     $('swOld').classList.toggle('on', mode === 'old'); $('swNew').classList.toggle('on', mode === 'new');
     $('filters').hidden = mode === 'new'; $('nfilters').hidden = mode !== 'new';
     renderList();
@@ -661,23 +727,21 @@
         c.innerHTML = `<div class="meta"><b>${q.session} ${q.year}</b> Part ${q.part} · ${a === b ? 'Q' + a : `Q${a}–${b}`} · ${countText} ${refChip(tabs, ref)}
             <span class="tag" title="${q.units.map(uLabel).join(' / ')}">${units}</span>` +
             (drops.length ? `<span class="drops">Left out: ${drops.map(n => `Q${n} <button data-putback="${n}">put back</button>`).join(' ')}</span>` : '') + `</div>
-          <div class="thumb">${q.passage ? `<img data-src="${q.passage.img}" alt="">` : ''}` +
-          q.items.map(it => `<img class="stem${isDropped(q.id, it.q) ? ' dropped' : ''}" data-q="${it.q}" data-src="${it.stem.img}" alt="" title="Q${it.q}: click to ${isDropped(q.id, it.q) ? 'put this question back' : 'leave this question out of the cluster'}">`).join('') + `</div>`;
+          <div class="thumb" data-tid="${q.id}"></div>`;
         c.title = picked.includes(q.id) ? 'Click to remove this cluster from the worksheet' : 'Click to add this cluster (passage, questions and answer space). Click a single question to leave it out.';
-        c.querySelectorAll('img.stem').forEach(im => { im.onclick = ev => { ev.stopPropagation(); toggleDrop(q.id, Number(im.dataset.q)); }; });
         c.querySelectorAll('button[data-putback]').forEach(bt => { bt.onclick = ev => { ev.stopPropagation(); toggleDrop(q.id, Number(bt.dataset.putback)); }; });
       } else if (q.kind === 'custom') {
         c.className += ' custom';
         const tn = q.type === 'misc' || !T[q.type] ? 'Misc' : T[q.type].name;
         c.innerHTML = `<div class="meta"><b>Custom</b> ${esc(q.author || '')} <button class="edit" title="Edit this question">Edit</button> ${refChip(q.tables, q.ref)}
             <span class="tag" title="${uLabel(q.unit)}">U${uNum(q.unit)} · ${esc(tn)}</span></div>
-          <div class="thumb">${customHTML(layoutCustom(q, 3.3, CUSTOM_PT), CUSTOM_PT)}</div>`;
+          <div class="thumb">${opsHTML(ENG.layoutBlocks(ENG.customBlocks(q), 3.3, THUMB_PT, { id: q.id }))}</div>`;
         c.querySelector('.edit').onclick = ev => { ev.stopPropagation(); openBuilder(q); };
       } else {
         const tn = T[q.type] ? T[q.type].name : '(untyped)';
         c.innerHTML = `<div class="meta"><b>${q.session} ${q.year}</b> Q${q.q} ${refChip(q.tables, q.ref)}
             <span class="tag" title="${uLabel(q.unit)}">U${uNum(q.unit)} · ${tn}</span></div>
-          <div class="thumb"><img data-src="${q.img}" alt=""></div>`;
+          <div class="thumb" data-tid="${q.id}"></div>`;
         c.title = (picked.includes(q.id) ? 'Click to remove from worksheet' : 'Click to add to worksheet') +
                   (q.group ? ` (questions ${q.group[0]}–${q.group[1]} share a passage and are added together)` : '') +
                   (q.refnote ? `\nReference tables: ${q.refnote}` : '');
@@ -716,22 +780,32 @@
     const c = byId[id]; if (!c) return; pvId = id;
     const isNew = c.kind === 'ncl', onSheet = picked.includes(id);
     $('pvTitle').textContent = isNew ? `${c.sample ? 'Sample 2025' : c.session + ' ' + c.year} · ${c.title || ''}` : `${c.session} ${c.year} · Part ${c.part} · Q${c.group[0]}${c.group[1] !== c.group[0] ? '–' + c.group[1] : ''}`;
-    $('pvHint').textContent = isNew ? `${c.questions.length} questions (${c.n_mc} MC, ${c.n_cr} CR) on ${c.pages.length} pre-laid-out page${c.pages.length === 1 ? '' : 's'}. New-format clusters are inserted whole.`
+    $('pvHint').textContent = isNew ? `${c.questions.length} questions (${c.n_mc} MC, ${c.n_cr} CR). New-format clusters are inserted whole and reflow with the worksheet.`
       : 'Untick any question you want to leave out; the passage and the rest of the cluster stay together.';
     $('pvBody').innerHTML = '<div class="hint">Loading…</div>';
     $('pvInsert').textContent = onSheet ? 'Update' : 'Insert'; $('pvRemove').hidden = !onSheet;
     $('preview').hidden = false;
-    const paths = isNew ? c.blocks.map(b => b.img) : [c.passage && c.passage.img].concat(c.items.flatMap(it => [it.stem.img, it.resp.img])).filter(Boolean);
-    try { await ensurePaths(paths); } catch (e) { $('pvBody').innerHTML = `<div class="hint">${esc(e.message)}</div>`; return; }
+    try { await ensureExam(examOf(id)); } catch (e) { $('pvBody').innerHTML = `<div class="hint">${esc(e.message)}</div>`; return; }
+    const t = TEXT[id]; if (!t) { $('pvBody').innerHTML = '<div class="hint">No text version of this cluster.</div>'; return; }
     if (pvId !== id) return;
     let h = '';
+    const PW = 6.8, pt = 11.5, nums = { a: c.group[0], b: c.group[1] };
     if (isNew) {
-      c.blocks.forEach(bl => { const qq = bl.kind === 'q' ? c.questions.find(x => x.q === bl.q) : null;
-        h += `<div class="pblock"><div class="plabel">${bl.kind === 'lead' ? 'Lead-in' : bl.kind === 'passage' ? 'Passage' : `Question ${bl.q} · ${qq && qq.mc ? 'multiple choice' : 'constructed response'}${qq && qq.descriptor ? ' · ' + esc(qq.descriptor) : ''}`}</div><img src="${urlOf(bl.img)}"></div>`; });
+      const lead = [].concat(t.lead ? [{ t: 'p', runs: t.lead.runs }] : [], t.tables_note ? [{ t: 'p', runs: t.tables_note.runs }] : []);
+      if (lead.length) h += `<div class="pblock"><div class="plabel">Lead-in</div>${opsHTML(ENG.layoutBlocks({ blocks: lead }, PW, pt, { nums }))}</div>`;
+      (t.blocks || []).forEach(bl => {
+        if (bl.t === 'passage') { h += `<div class="pblock"><div class="plabel">Passage</div>${opsHTML(ENG.layoutBlocks({ blocks: bl.blocks }, PW, pt, {}))}</div>`; return; }
+        if (bl.t !== 'q') return;
+        const qq = c.questions.find(x => x.q === bl.q);
+        const lay = bl.mc ? ENG.layoutBlocks(bl, PW, pt, {}) : ENG.layoutBlocks({ blocks: bl.blocks }, PW, pt, { credit: bl.credit, resp: bl.resp });
+        h += `<div class="pblock"><div class="plabel">Question ${bl.q} · ${bl.mc ? 'multiple choice' : 'constructed response'}${qq && qq.descriptor ? ' · ' + esc(qq.descriptor) : ''}</div>${opsHTML(lay)}</div>`;
+      });
     } else {
-      if (c.passage) h += `<div class="pblock"><div class="plabel">Passage</div><img src="${urlOf(c.passage.img)}"></div>`;
-      c.items.forEach(it => { const out = onSheet && isDropped(id, it.q);
-        h += `<div class="pq ${out ? 'out' : ''}" data-q="${it.q}"><label><input type="checkbox" data-q="${it.q}" ${out ? '' : 'checked'}>Q${it.q}</label><div style="flex:1;min-width:0"><div class="plabel">${esc(it.descriptor || '')}</div><img src="${urlOf(it.stem.img)}">${it.resp.shared_with != null ? '<div class="plabel">answer space shared with the previous question</div>' : `<img src="${urlOf(it.resp.img)}" style="margin-top:4px">`}</div></div>`; });
+      const pblocks = [].concat(t.lead ? [{ t: 'p', runs: t.lead.runs }] : [], t.blocks || []);
+      if (pblocks.length) h += `<div class="pblock"><div class="plabel">Passage</div>${opsHTML(ENG.layoutBlocks({ blocks: pblocks }, PW, pt, { nums }))}</div>`;
+      c.items.forEach(it => { const out = onSheet && isDropped(id, it.q); const ti = (t.items || []).find(x => x.q === it.q);
+        const body = ti ? opsHTML(ENG.layoutBlocks({ blocks: ti.blocks }, PW - 0.9, pt, { credit: ti.credit, resp: ti.resp && ti.resp.shared_with != null ? null : ti.resp })) : '<span class="hint">no text</span>';
+        h += `<div class="pq ${out ? 'out' : ''}" data-q="${it.q}"><label><input type="checkbox" data-q="${it.q}" ${out ? '' : 'checked'}>Q${it.q}</label><div style="flex:1;min-width:0"><div class="plabel">${esc(it.descriptor || '')}</div>${body}${ti && ti.resp && ti.resp.shared_with != null ? '<div class="plabel">answer space shared with the previous question</div>' : ''}</div></div>`; });
     }
     $('pvBody').innerHTML = h;
     $('pvBody').querySelectorAll('input[data-q]').forEach(cb => cb.onchange = () => cb.closest('.pq').classList.toggle('out', !cb.checked));
@@ -790,111 +864,13 @@
   };
 
   // ---------- worksheet: pack items onto letter pages ----------
-  const PAGE_H = 10, PAGE_W = 7.5, ITEM_GAP = 0.16, GUTTER = 0.36;   // GUTTER matches --gutter in the CSS
+  let PAGE_H = 10, PAGE_W = 7.5; const ITEM_GAP = 0.16, GUTTER = 0.36;   // GUTTER matches --gutter in the CSS
   let COLGAP = 0.3;                                                   // widens when answer blanks are on, so the right column's blank fits in the gap
   const BLANK_W = 0.3, BLANK_GAP = 0.03, BLANK_IN = 0.1;   // blank ends inside the number cell, just left of a two-digit number
-  function layout(items, opts) {
-    const cols = opts.cols || 2;
-    const colW = cols === 2 ? (PAGE_W - COLGAP) / 2 : PAGE_W;
-    const pages = []; let page, y0, col, colY, bandTop, parked = [], headDone = false;
-    function newPage(pdf) {
-      page = { items: [], rules: [], pdf: pdf || null }; pages.push(page);
-      y0 = pdf ? 0 : ((!headDone || opts.headAll) ? (opts.headH || 0) : 0);
-      if (!pdf) headDone = true;
-      col = 0; colY = [y0, y0]; bandTop = y0;
-    }
-    function closeBand() {
-      const bottom = Math.max(colY[0], colY[1]);
-      const inBand = page.items.filter(p => p.y >= bandTop && !p.item.full && p.item.kind !== 'brk');
-      if (cols === 2 && inBand.length && (inBand.some(p => p.x > 0) || bottom - bandTop > 3))
-        page.rules.push({ x: colW + COLGAP / 2, y: bandTop, h: bottom - bandTop - ITEM_GAP });
-      return bottom;
-    }
-    function newBand() { const b = closeBand(); colY = [b, b]; bandTop = b; col = 0; }
-    function placeFull(it) {
-      let y = closeBand();
-      if (y + it.h > PAGE_H && page.items.length) { newPage(); y = y0; }
-      page.items.push({ item: it, x: 0, y });
-      colY = [y + it.h + ITEM_GAP, y + it.h + ITEM_GAP]; bandTop = colY[0]; col = 0;
-    }
-    function placeHalf(it) {
-      const h = it.h + ITEM_GAP;
-      while (true) {
-        if (colY[col] + it.h <= PAGE_H) { page.items.push({ item: it, x: col * (colW + COLGAP), y: colY[col] }); colY[col] += h; return; }
-        if (col === 0) { col = 1; continue; }
-        if (parked.length) { flushParked(); if (colY[0] + it.h <= PAGE_H) continue; }
-        closeBand(); newPage();
-      }
-    }
-    function placeBlock(block) {
-      const [first, ...rest] = block;
-      const need = first.h + ITEM_GAP + (first.kind === 'stim' && rest.length ? rest[0].h + ITEM_GAP : 0);
-      let y = closeBand();
-      if (y + need > PAGE_H && page.items.length) { newPage(); y = y0; }
-      if (first.full || cols === 1) { placeFull(first); }
-      else { page.items.push({ item: first, x: 0, y }); colY = [y + first.h + ITEM_GAP, y]; bandTop = y; col = 0; }
-      rest.forEach(q => { if (q.full || cols === 1) placeFull(q); else placeHalf(q); });
-    }
-    function flushParked() {
-      while (parked.length) { const u = parked.shift(); Array.isArray(u) ? placeBlock(u) : placeFull(u); }
-    }
-    const hasContent = () => page.items.some(p => p.item.kind !== 'brk');
-    newPage();
-    const units = [];
-    items.forEach(it => {
-      const last = units[units.length - 1];
-      if (it.block && Array.isArray(last) && last[0].block === it.block) last.push(it);
-      else units.push(it.block ? [it] : it);
-    });
-    units.forEach(u => {
-      if (!Array.isArray(u) && u.kind === 'brk') {
-        if (u.type === 'col') {
-          if (col === 0) { page.items.push({ item: u, x: 0, y: colY[0] }); col = 1; }
-          else { page.items.push({ item: u, x: colW + COLGAP, y: colY[1] }); flushParked(); newBand(); }
-        } else {
-          page.items.push({ item: u, x: col * (colW + COLGAP), y: colY[col] });
-          flushParked(); closeBand();
-          if (hasContent() || page.pdf) newPage(); else { colY = [y0, y0]; bandTop = y0; col = 0; }
-        }
-        return;
-      }
-      if (!Array.isArray(u) && u.kind === 'ncl') {
-        // a new-format cluster: its pre-planned pages drop in unchanged (scaled only if one is the worksheet's first page)
-        flushParked(); closeBand();
-        u.c.pages.forEach((pg, pi) => {
-          if (hasContent() || page.pdf || page.fixed) newPage();
-          page.fixed = { c: u.c, pi, i: u.i };
-          const first = pages.length === 1;
-          const k = first ? (PAGE_H - (opts.headH || 0)) / PAGE_H : 1, off = first ? (opts.headH || 0) : 0;
-          pg.forEach(it => {
-            const bl = u.c.blocks[it.b];
-            const w = Math.min(PAGE_W, bl.w_in) * k;
-            page.items.push({ item: { kind: 'nb', c: u.c, bl, i: u.i, w, h: it.h * k, k, full: true }, x: 0, y: off + it.y * k });
-          });
-          colY = [PAGE_H, PAGE_H]; bandTop = PAGE_H; col = 0;
-        });
-        newPage();
-        return;
-      }
-      if (!Array.isArray(u) && u.kind === 'pdf') {
-        flushParked(); closeBand();
-        if (hasContent()) newPage(u);
-        else { page.items = []; page.rules = []; page.pdf = u; if (pages.length === 1) headDone = false; }
-        newPage();
-        return;
-      }
-      const bandEmpty = colY[0] === y0 && colY[1] === y0;
-      if (Array.isArray(u)) { if (bandEmpty) placeBlock(u); else parked.push(u); return; }
-      if (u.full || cols === 1) { if (bandEmpty) placeFull(u); else parked.push(u); return; }
-      placeHalf(u);
-    });
-    flushParked(); closeBand();
-    while (pages.length > 1 && !pages[pages.length - 1].pdf && !pages[pages.length - 1].fixed && !pages[pages.length - 1].items.some(p => p.item.kind !== 'brk')) pages.pop();
-    return pages;
-  }
+  const SIZE_PT = { normal: 11.5, large: 14, enlarged: 16 };
 
   // ---------- settings ----------
-  const OPTS = ['oStart', 'oScale', 'oBlanks', 'oNote', 'oBlank', 'oKey', 'oCRKey', 'oRefBlock', 'oSrc', 'oVersion', 'oKind', 'oUnitTag'];
+  const OPTS = ['oStart', 'oLayout', 'oSize', 'oFill', 'oBlanks', 'oNote', 'oBlank', 'oKey', 'oCRKey', 'oRefBlock', 'oSrc', 'oVersion', 'oKind', 'oUnitTag'];
   const opt = id => { const el = $(id); return el.type === 'checkbox' ? el.checked : el.value; };
   const setOpt = (id, v) => { const el = $(id); if (!el || v == null) return; if (el.type === 'checkbox') el.checked = !!v; else el.value = v; };
   const getOpts = () => Object.fromEntries(OPTS.map(id => [id, opt(id)]));
@@ -907,115 +883,30 @@
   };
   function versionHint() {
     const d = versionDocs(); const n = d.sheets.length + d.keys.length;
-    const noB = picked.filter(id => byId[id] && byId[id].kind === undefined && !byId[id].b).length + picked.reduce((s, id) => s + (byId[id] && byId[id].kind === 'ncl' ? byId[id].questions.filter(q => q.mc && !q.b).length : 0), 0);
-    $('versionHint').textContent = `Make PDFs will produce ${n} file${n === 1 ? '' : 's'}: ` + d.sheets.map(s => safeName() + s.suffix + '.pdf').concat(d.keys.map(k => safeName() + k.suffix + '.pdf')).join(', ') +
-      ((opt('oVersion') === 'ab' || opt('oVersion') === 'abnolabel') && noB ? `. ${noB} chosen question${noB === 1 ? ' has' : 's have'} no shuffled version and will read the same in both forms.` : '');
+    $('versionHint').textContent = `Make PDFs will produce ${n} file${n === 1 ? '' : 's'}: ` + d.sheets.map(s => safeName() + s.suffix + '.pdf').concat(d.keys.map(k => safeName() + k.suffix + '.pdf')).join(', ');
   }
   $('btnSettings').onclick = () => { versionHint(); $('settings').hidden = false; };
   $('sClose').onclick = () => { $('settings').hidden = true; };
   $('settings').addEventListener('click', e => { if (e.target === $('settings')) $('settings').hidden = true; });
 
-  // ---------- the worksheet model: items, pages, numbering, key rows ----------
+  // ---------- the worksheet model: items, pages, numbering, key rows (typeset by lib/textpdf.js) ----------
   function buildModel() {
+    const size = opt('oSize') || 'normal', pt = SIZE_PT[size] || 11.5, landscape = size === 'enlarged';
+    const cols = (opt('oLayout') === 'wide' || landscape) ? 1 : 2;
+    TextPDF.setPage(landscape); ({ PAGE_W, PAGE_H } = ENG.consts);
     COLGAP = opt('oBlank') ? 0.55 : 0.3;
-    const scale = Number(opt('oScale')) / 100, start = Number(opt('oStart')) || 1;
-    const headH = 0.5 + (opt('oNote') ? 0.32 : 0.1);
-    const items = []; const shown = new Set();
-    const halfW = (PAGE_W - COLGAP) / 2;
-    const addQ = (q, i) => {
-      if (q.kind === 'custom') {
-        const w = (q.width === 'full' ? PAGE_W : halfW) - GUTTER;
-        const lay = layoutCustom(q, w, CUSTOM_PT * scale), layB = layoutCustom(q, w, CUSTOM_PT * scale, customPerm(q));
-        const h = Math.min(PAGE_H - 0.2, Math.max(lay.h, layB.h));
-        items.push({ kind: 'q', q, i, custom: true, lay, layB, pt: CUSTOM_PT * scale, w, h, indent: 0, full: q.width === 'full', block: null });
-        return;
-      }
-      const maxW = (q.width === 'full' ? PAGE_W : halfW) - GUTTER + (q.indent_in || 0) * scale + 0.05;
-      const sc = Math.min(1, (PAGE_H - 0.2) / (q.h_in * scale), maxW / (q.w_in * scale));
-      items.push({ kind: 'q', q, i, img: q.img, imgB: q.b ? q.b.img : q.img, w: q.w_in * scale * sc, h: q.h_in * scale * sc, indent: (q.indent_in || 0) * scale * sc,
-                   full: q.width === 'full', block: q.stimulus || null });
-    };
-    const fitFull = (w_in, h_in, indent) => Math.min(1, (PAGE_H - 0.2) / (h_in * scale), (PAGE_W - GUTTER + (indent || 0) * scale + 0.05) / (w_in * scale));
-    picked.forEach((id, i) => {
-      if (extras[id]) { items.push(Object.assign({ i, id, h: 0, w: 0 }, extras[id])); return; }
-      const q = byId[id]; if (!q) return;
-      if (q.kind === 'ncl') { items.push({ kind: 'ncl', c: q, i, h: 0, w: 0 }); return; }
-      if (q.kind === 'cluster') {
-        if (q.passage) {
-          const p = q.passage, k = fitFull(p.w_in, p.h_in, 0);
-          items.push({ kind: 'stim', stim: p, slots: p.slots || [], img: p.img, w: p.w_in * scale * k, h: p.h_in * scale * k, full: true, block: q.id, i });
-        }
-        const kept = keptItems(q);
-        if (!kept.length) return;
-        kept.forEach(it => {
-          const ks = fitFull(it.stem.w_in, it.stem.h_in, it.stem.indent_in), kr = fitFull(it.resp.w_in, it.resp.h_in, 0);
-          const sharedResp = it.resp.shared_with != null && kept.some(o => o.q === it.resp.shared_with);
-          const sw = it.stem.w_in * scale * ks, sh = it.stem.h_in * scale * ks, rw = sharedResp ? 0 : it.resp.w_in * scale * kr, rh = sharedResp ? 0 : it.resp.h_in * scale * kr;
-          items.push({ kind: 'cq', c: q, cq: it, i, qnum: it.q, img: it.stem.img, w: Math.max(sw, rw), h: sh + (rh ? 0.06 + rh : 0), sw, sh, rw, rh,
-                       indent: (it.stem.indent_in || 0) * scale * ks, full: true, block: q.id });
-        });
-        return;
-      }
-      if (q.stimulus) {
-        if (shown.has(q.stimulus)) return;
-        shown.add(q.stimulus); const s = stimById[q.stimulus];
-        items.push({ kind: 'stim', stim: s, slots: s.slots || [], img: s.img, w: s.w_in * scale, h: s.h_in * scale, full: s.width === 'full', block: q.stimulus });
-        picked.forEach((id2, i2) => { const q2 = byId[id2]; if (q2 && q2.stimulus === q.stimulus) addQ(q2, i2); });
-        return;
-      }
-      addQ(q, i);
-    });
-    const pages = layout(items, { cols: 2, headH });
-    let n = start; const order = [];
-    pages.forEach(pg => pg.items.forEach(p => {
-      if (p.item.kind === 'q') { p.item.n = n++; const q = p.item.q; order.push({ n: p.item.n, q, kind: q.kind, answer: q.answer, answerB: q.kind === 'custom' ? customPerm(q).indexOf(q.answer - 1) + 1 : (q.b ? q.b.answer : q.answer), tables: q.tables || [], ref: q.ref, refnote: q.refnote }); }
-      if (p.item.kind === 'nb' && p.item.bl.kind === 'q') {
-        p.item.n = n++; const c = p.item.c, qq = c.questions.find(x => x.q === p.item.bl.q);
-        order.push({ n: p.item.n, ncl: true, c, qq, cr: !qq.mc, answer: qq.answer, answerB: qq.b ? qq.b.answer : qq.answer, key: qq.key, session: c.session, year: c.year, q: qq.q, unit: qq.unit, type: qq.type, tables: [], ref: 'none' });
-      }
-      if (p.item.kind === 'cq') { p.item.n = n++; const it = p.item.cq, c = p.item.c;
-        order.push({ n: p.item.n, cr: true, session: c.session, year: c.year, q: it.q, unit: it.unit, type: it.type, key: it.key, tables: it.tables || [], ref: it.ref, refnote: it.refnote }); }
-    }));
-    const tabs = {};
-    order.forEach(o => (o.tables || []).forEach(t => { tabs[t] = tabs[t] || { nums: [], old: false }; tabs[t].nums.push(o.n); if (o.ref === 'old' || o.ref === 'partial') tabs[t].old = true; }));
-    const keyItems = [];
-    order.filter(o => o.cr && o.key).forEach(o => {
-      const imgs = o.key.imgs || [o.key];
-      imgs.forEach((im, ii) => {
-        const k = Math.min(1, (PAGE_W - GUTTER) / im.w_in, (PAGE_H - 0.6) / im.h_in);
-        keyItems.push({ kind: 'key', n: ii === 0 ? o.n : '', img: im.img, w: im.w_in * k, h: im.h_in * k, full: true });
-      });
-    });
-    const keyPages = opt('oCRKey') && keyItems.length ? layout(keyItems, { cols: 1, headH: 0.5, headAll: true }) : [];
-    return { items, pages, order, tabs, keyPages, scale, start, headH, nq: order.length, blank: !!opt('oBlank') };
+    const custom = Object.fromEntries(Q.filter(q => q.kind === 'custom').map(q => [q.id, q]));
+    const items = ENG.buildItems(picked, { bank: B, bankNew: BN, text: TEXT, custom, extras, dropped, cols, pt, wide: cols === 1, blank: !!opt('oBlank'), note: !!opt('oNote') });
+    const M = ENG.buildModel(items, { cols, pt, start: Number(opt('oStart')) || 1, blank: !!opt('oBlank'), note: !!opt('oNote'), crKey: !!opt('oCRKey'), fill: !!opt('oFill') });
+    M.scale = pt / 11.5; M.start = Number(opt('oStart')) || 1;
+    return M;
   }
-  function sourceText(o) {
-    return o.ncl ? `New Regents ${o.c.sample ? 'sample' : o.session + ' ' + o.year} · ${esc(o.c.title || '')} Q${o.q}${o.type ? ' · N' + o.type : ''}` : o.kind === 'custom' ? `Custom question${o.q.author ? ' · ' + o.q.author : ''}` : o.cr ? `${o.session} ${o.year} Q${o.q} · U${uNum(o.unit)} · ${(T[o.type] || {}).name || ''}` : `${o.q.session} ${o.q.year} Q${o.q.q} · U${uNum(o.q.unit)} · ${(T[o.q.type] || {}).name || ''}`;
-  }
+  const sourceText = o => esc(o.src || '');
   function refLines(tabs) {
     const keys = Object.keys(tabs).sort((a, b) => (a.startsWith('PT') - b.startsWith('PT')) || a.localeCompare(b));
     return keys.map(t => ({ t, label: tableLabel(t), nums: tabs[t].nums, old: tabs[t].old }));
   }
-  // new-format lead-in sentence, typeset with the worksheet's first and last numbers of that cluster
-  function leadLayout(it, M) {
-    const qs = [].concat(...M.pages.map(x => x.items)).filter(o => o.item.kind === 'nb' && o.item.c === it.c && o.item.bl.kind === 'q').map(o => o.item.n);
-    const a = qs.length ? Math.min(...qs) : '', b = qs.length ? Math.max(...qs) : '';
-    const text = it.bl.tpl.replace('{a}', a).replace('{b}', b);
-    const pt = 10 * it.k, w = it.w - 0.4 * it.k, lh = pt / 72 * 1.25, asc = pt / 72 * 0.891;
-    const ops = []; let y = 0.02;
-    wrap(text, w, pt).forEach(line => { y += lh; ops.push({ t: 'text', s: line, x: 0, y: y - (lh - asc) / 2, pt }); });
-    return { ops, h: y + 0.02, w, pt };
-  }
-  const slotOwner = (M, it, sl) => {
-    const all = [].concat(...M.pages.map(x => x.items)).filter(o => o.item.block === it.block && (o.item.kind === 'q' || o.item.kind === 'cq'));
-    const qn = o => o.item.kind === 'q' ? o.item.q.q : o.item.qnum;
-    return all.find(o => qn(o) === sl.q) || all.sort((a, b) => Math.abs(qn(a) - sl.q) - Math.abs(qn(b) - sl.q))[0];
-  };
-  const neededPaths = () => {
-    const paths = [];
-    picked.forEach(id => { const q = byId[id]; if (!q) return; if (q.kind === 'ncl') { q.blocks.forEach(bl => paths.push(bl.img)); q.questions.forEach(qq => { if (qq.b) paths.push(qq.b.img); if (qq.key) (qq.key.imgs || []).forEach(im => paths.push(im.img)); }); return; } if (q.kind === 'cluster') { if (q.passage) paths.push(q.passage.img); q.items.forEach(it => { paths.push(it.stem.img, it.resp.img); if (it.key) paths.push(it.key.img); }); } else if (q.kind !== 'custom') { paths.push(q.img); if (q.b) paths.push(q.b.img); if (q.stimulus) paths.push(stimById[q.stimulus].img); } });
-    return paths;
-  };
+  const neededPaths = () => picked.filter(id => byId[id]);
 
   // ---------- screen rendering ----------
   let renderToken = 0;
@@ -1028,7 +919,7 @@
     const M = buildModel();
     const title = esc($('oTitle').value);
     const ctlFor = it => `<div class="ctl"><button data-act="up" ${it.i === 0 ? 'disabled' : ''} title="Move up">&#9650;</button><button data-act="down" ${it.i === picked.length - 1 ? 'disabled' : ''} title="Move down">&#9660;</button>` +
-      (it.kind === 'cq' ? `<button data-act="drop" data-q="${it.qnum}" title="Leave this question out (the rest of the cluster stays)">&#10005;</button>` : `<button data-act="del" title="Remove">&#10005;</button>`) + `</div>`;
+      (it.kind === 'cq' && it.c ? `<button data-act="drop" data-q="${it.qnum}" title="Leave this question out (the rest of the cluster stays)">&#10005;</button>` : `<button data-act="del" title="Remove">&#10005;</button>`) + `</div>`;
     let html = ''; let headShown = false;
     M.pages.forEach((pg, pi) => {
       if (pg.pdf) {
@@ -1036,8 +927,8 @@
         html += `<div class="page pdfpage" data-i="${it.i}"><img class="full" src="${it.thumb}" alt=""><span class="cap">${esc(it.name)} — page ${it.page} of ${it.pages}</span>${ctlFor(it)}</div>`;
         return;
       }
-      html += `<div class="page${pg.fixed ? ' fixed' : ''}"><div class="body">`;
-      if (pg.fixed) {
+      html += `<div class="page${M.landscape ? ' land' : ''}"><div class="body">`;
+      if (false) {
         const f = pg.fixed;
         html += `<div class="item" data-i="${f.i}" style="left:0;top:0;width:7.5in;height:0"><div class="ctl" style="top:2px;right:2px;display:flex"><span style="font-size:11px;background:var(--maroon-tint);color:var(--maroon-deep);padding:0 8px;border-radius:999px;border:1px solid var(--tint-line);line-height:18px">${esc(f.c.title || 'cluster')} · page ${f.pi + 1}/${f.c.pages.length}</span>` +
           `<button data-act="up" ${f.i === 0 ? 'disabled' : ''} title="Move up">&#9650;</button><button data-act="down" ${f.i === picked.length - 1 ? 'disabled' : ''} title="Move down">&#9660;</button><button data-act="del" title="Remove this cluster">&#10005;</button></div></div>`;
@@ -1049,61 +940,38 @@
         if (opt('oNote')) html += `<div class="note">Some questions may require the use of the Reference Tables for Physical Setting/Chemistry.</div>`;
       }
       pg.rules.forEach(r => { html += `<div class="rule" style="left:${r.x.toFixed(3)}in;top:${r.y.toFixed(3)}in;height:${Math.max(0, r.h).toFixed(3)}in"></div>`; });
+      const numPt = 11 * Math.max(1, (M.pt || 11.5) / 11.5), numAsc = numPt / 72 * 0.891;
       pg.items.forEach(p => {
         const it = p.item;
-        if (it.kind === 'nb' && it.bl.kind === 'lead' && it.bl.tpl) {
-          const lay = leadLayout(it, M);
-          html += `<div style="position:absolute;left:${(p.x + 0.28 * it.k).toFixed(3)}in;top:${p.y.toFixed(3)}in">${customHTML(lay, lay.pt)}</div>`;
-          return;
-        }
-        if (it.kind === 'nb') {
-          html += `<img src="${urlOf(it.bl.img)}" style="position:absolute;left:${p.x.toFixed(3)}in;top:${p.y.toFixed(3)}in;width:${it.w.toFixed(3)}in;height:${it.h.toFixed(3)}in">`;
-          const kk = it.w / it.bl.w_in;
-          (it.bl.slots || []).forEach(sl => {
-            let num = null;
-            if (it.bl.kind === 'q') num = it.n;
-            else { const owner = [].concat(...M.pages.map(x => x.items)).filter(o => o.item.kind === 'nb' && o.item.c === it.c && o.item.bl.kind === 'q'); const near = owner.sort((a, b) => Math.abs(a.item.bl.q - sl.q) - Math.abs(b.item.bl.q - sl.q))[0]; num = near ? near.item.n : ''; }
-            const right = p.x + (sl.x_in + sl.w_in) * kk + 0.02, top = p.y + sl.y_in * kk, hh = sl.h_in * kk;
-            html += `<span class="nnum" style="right:${(PAGE_W - right).toFixed(3)}in;top:${top.toFixed(3)}in;height:${hh.toFixed(3)}in;line-height:${hh.toFixed(3)}in;min-width:${(sl.w_in * kk + 0.04).toFixed(3)}in;font-size:${(sl.size_pt * kk).toFixed(1)}pt">${num}</span>`;
-            if (M.blank && it.bl.kind === 'q') { const qq = it.c.questions.find(x => x.q === it.bl.q); if (qq && qq.mc) html += `<span class="ablank" style="left:${(p.x + sl.x_in * kk - BLANK_W - BLANK_GAP).toFixed(3)}in;top:${(top + hh - 0.02).toFixed(3)}in;width:${BLANK_W}in"></span>`; }
-          });
-          return;
-        }
         const ctl = (it.kind === 'q' || it.kind === 'cq' || it.kind === 'brk' || (it.kind === 'stim' && it.i !== undefined)) ? ctlFor(it) : '';
         if (it.kind === 'brk') {
-          const w = it.type === 'col' ? (PAGE_W - COLGAP) / 2 : PAGE_W;
-          html += `<div class="item" data-i="${it.i}" style="left:${p.x.toFixed(3)}in;top:${p.y.toFixed(3)}in;width:${w.toFixed(3)}in"><div class="brk" style="width:100%">${it.type === 'col' ? 'Column break' : 'Page break'}</div>${ctl}</div>`;
+          const w = it.type === 'col' ? (PAGE_W - COLGAP) / 2 : PAGE_W - p.x;
+          const top = p.atTop ? -0.42 : p.y;
+          html += `<div class="item" data-i="${it.i}" style="left:${p.x.toFixed(3)}in;top:${top.toFixed(3)}in;width:${w.toFixed(3)}in"><div class="brk" style="width:100%">${it.type === 'col' ? 'Column break' : 'Page break'}${p.atTop ? ' (starts this page)' : ''}</div>${ctl}</div>`;
           return;
         }
-        let overlay = '';
-        if (it.kind === 'stim' && it.slots) {
-          const k = it.w / (it.stim.w_in || it.w);
-          it.slots.forEach(sl => {
-            const qi = slotOwner(M, it, sl); if (!qi) return;
-            overlay += `<span class="slot" style="left:${(GUTTER + sl.x_in * k - 0.02).toFixed(3)}in;top:${(sl.y_in * k).toFixed(3)}in;min-width:${(sl.w_in * k + 0.04).toFixed(3)}in;height:${(sl.h_in * k).toFixed(3)}in;line-height:${(sl.h_in * k).toFixed(3)}in;font-size:${(sl.size_pt * k).toFixed(1)}pt">${qi.item.n}</span>`;
-          });
-        }
-        const body = it.kind === 'cq'
-          ? `<div class="cq"><img src="${urlOf(it.img)}" style="width:${it.sw.toFixed(3)}in;height:${it.sh.toFixed(3)}in;margin-left:${(-(it.indent || 0)).toFixed(3)}in">` +
-            (it.rh ? `<img class="resp" src="${urlOf(it.cq.resp.img)}" style="width:${it.rw.toFixed(3)}in;height:${it.rh.toFixed(3)}in">` : '') + `</div>`
-          : it.custom ? customHTML(it.lay, it.pt)
-          : `<img src="${urlOf(it.img)}" style="width:${it.w.toFixed(3)}in;height:${it.h.toFixed(3)}in;margin-left:${(-(it.indent || 0)).toFixed(3)}in">`;
-        html += `<div class="item" data-i="${it.i ?? ''}" style="left:${p.x.toFixed(3)}in;top:${p.y.toFixed(3)}in">` +
-          `<div class="num">${(it.kind === 'q' || it.kind === 'cq') ? it.n : '&nbsp;'}</div>${body}${overlay}${ctl}` +
-          (M.blank && it.kind === 'q' ? `<span class="ablank" style="left:${(BLANK_IN - BLANK_W).toFixed(3)}in;top:0.13in;width:${BLANK_W}in"></span>` : '') + `</div>`;
+        const lay = ENG.itemLay(M, it, 'A');
+        const numbered = it.kind === 'q' || it.kind === 'cq';
+        html += `<div class="item" data-i="${it.i ?? ''}" style="left:${p.x.toFixed(3)}in;top:${p.y.toFixed(3)}in;width:${(it.w + GUTTER).toFixed(3)}in">` +
+          (numbered ? `<div class="num" style="top:${(lay.base0 - numAsc).toFixed(3)}in;font-size:${numPt}pt">${it.n}</div>` : '') +
+          `<div class="qbody">${opsHTML(lay)}</div>${ctl}` +
+          (M.blank && it.mc ? `<span class="ablank" style="left:${(BLANK_IN - BLANK_W).toFixed(3)}in;top:${(lay.base0 + 0.01).toFixed(3)}in;width:${BLANK_W}in"></span>` : '') + `</div>`;
       });
       html += `<div class="pnum">${pi + 1}</div></div></div>`;
     });
     if (opt('oKey')) {
       const src = opt('oSrc'), crPages = opt('oCRKey');
-      const chunks = []; for (let i = 0; i < M.order.length; i += 40) chunks.push(M.order.slice(i, i + 40));
-      html += `<div class="page keypage"><div class="body key"><h2>${title} — Answer Key</h2><div class="tables">`;
-      chunks.forEach(ch => {
-        html += `<table><tr><th>#</th><th>Answer</th>${src ? '<th>Source</th>' : ''}</tr>`;
-        ch.forEach(o => { html += `<tr><td>${o.n}</td><td>${o.cr ? `<span class="src">${o.key && crPages ? 'see scoring pages' : 'see rating guide'}</span>` : (o.answer ?? '?')}</td>${src ? `<td class="src">${esc(sourceText(o))}</td>` : ''}</tr>`; });
-        html += `</table>`;
+      const kpages = ENG.keyTablePages(M, !!src);
+      kpages.forEach((kp, ki) => {
+        if (ki) html += `</div></div>`;
+        html += `<div class="page keypage${M.landscape ? ' land' : ''}"><div class="body key"><h2>${title} — Answer Key${ki ? ' (continued)' : ''}</h2><div class="tables">`;
+        kp.chunks.forEach(ch => {
+          html += `<table><tr><th>#</th><th>Answer</th>${src ? '<th>Source</th>' : ''}</tr>`;
+          ch.forEach(o => { html += `<tr><td>${o.n}</td><td>${o.cr ? `<span class="src">${o.key && crPages && M.keyPages.length ? 'see scoring pages' : 'see rating guide'}</span>` : (o.answer ?? '?')}</td>${src ? `<td class="src">${sourceText(o)}</td>` : ''}</tr>`; });
+          html += `</table>`;
+        });
+        html += `</div>`;
       });
-      html += `</div>`;
       if (opt('oRefBlock')) {
         const lines = refLines(M.tabs);
         html += `<div class="refblock"><b>Reference tables needed</b> (2011 edition letters; <span class="old">bold</span> = not on the 2025 edition)<br>` +
@@ -1112,8 +980,8 @@
       html += `</div></div>`;
     }
     M.keyPages.forEach((pg, ki) => {
-      html += `<div class="page keypage"><div class="body key"><h2>${title} — Constructed-response scoring (from the NYSED rating guides)${ki ? ', continued' : ''}</h2>`;
-      pg.items.forEach(p => { const it = p.item; html += `<div class="item" style="left:0;top:${p.y.toFixed(3)}in"><div class="num">${it.n}</div><img src="${urlOf(it.img)}" style="width:${it.w.toFixed(3)}in;height:${it.h.toFixed(3)}in"></div>`; });
+      html += `<div class="page keypage${M.landscape ? ' land' : ''}"><div class="body key"><h2>${title} — Constructed-response scoring (from the NYSED rating guides)${ki ? ', continued' : ''}</h2>`;
+      pg.items.forEach(p => { const it = p.item; html += `<div class="item" style="left:0;top:${p.y.toFixed(3)}in;width:${(it.w + GUTTER).toFixed(3)}in"><div class="num" style="top:${(it.lay.base0 - 11 / 72 * 0.891).toFixed(3)}in;font-size:11pt">${it.n}</div><div class="qbody">${opsHTML(it.lay)}</div></div>`; });
       html += `</div></div>`;
     });
     wrap.innerHTML = html;
@@ -1136,19 +1004,19 @@
   // ---------- persistence ----------
   function persist() {
     try {
-      localStorage.setItem('ctb.picked', JSON.stringify(picked)); localStorage.setItem('ctb.title', $('oTitle').value);
-      localStorage.setItem('ctb.opts', JSON.stringify(getOpts())); localStorage.setItem('ctb.dropped', JSON.stringify(dropped));
-      try { localStorage.setItem('ctb.extras', JSON.stringify(extras)); }
-      catch (e) { localStorage.setItem('ctb.extras', JSON.stringify(Object.fromEntries(Object.entries(extras).filter(([k, v]) => v.kind !== 'pdf')))); }
+      localStorage.setItem('ttb.picked', JSON.stringify(picked)); localStorage.setItem('ttb.title', $('oTitle').value);
+      localStorage.setItem('ttb.opts', JSON.stringify(getOpts())); localStorage.setItem('ttb.dropped', JSON.stringify(dropped));
+      try { localStorage.setItem('ttb.extras', JSON.stringify(extras)); }
+      catch (e) { localStorage.setItem('ttb.extras', JSON.stringify(Object.fromEntries(Object.entries(extras).filter(([k, v]) => v.kind !== 'pdf')))); }
     } catch (e) { }
   }
   try {
-    const p = JSON.parse(localStorage.getItem('ctb.picked') || '[]');
-    extras = JSON.parse(localStorage.getItem('ctb.extras') || '{}');
-    dropped = JSON.parse(localStorage.getItem('ctb.dropped') || '{}');
+    const p = JSON.parse(localStorage.getItem('ttb.picked') || '[]');
+    extras = JSON.parse(localStorage.getItem('ttb.extras') || '{}');
+    dropped = JSON.parse(localStorage.getItem('ttb.dropped') || '{}');
     picked = p.filter(id => byId[id] || extras[id]);
-    const t = localStorage.getItem('ctb.title'); if (t) $('oTitle').value = t;
-    const o = JSON.parse(localStorage.getItem('ctb.opts') || '{}'); Object.entries(o).forEach(([k, v]) => setOpt(k, v));
+    const t = localStorage.getItem('ttb.title'); if (t) $('oTitle').value = t;
+    const o = JSON.parse(localStorage.getItem('ttb.opts') || '{}'); Object.entries(o).forEach(([k, v]) => setOpt(k, v));
   } catch (e) { picked = []; extras = {}; dropped = {}; }
   if (location.hash.startsWith('#load=')) {
     picked = []; extras = {}; dropped = {};
@@ -1161,8 +1029,8 @@
   }
 
   let currentWs = null;                       // {id, title} when the worksheet came from / went to the library
-  try { currentWs = JSON.parse(localStorage.getItem('ctb.currentWs') || 'null'); } catch (e) { }
-  const setCurrent = w => { currentWs = w; try { localStorage.setItem('ctb.currentWs', JSON.stringify(w)); } catch (e) { } };
+  try { currentWs = JSON.parse(localStorage.getItem('ttb.currentWs') || 'null'); } catch (e) { }
+  const setCurrent = w => { currentWs = w; try { localStorage.setItem('ttb.currentWs', JSON.stringify(w)); } catch (e) { } };
   const exportFile = () => {
     const data = { title: $('oTitle').value, questions: picked, extras, dropped, options: getOpts(), version: 3 };
     const a = document.createElement('a');
@@ -1229,7 +1097,7 @@
     extras = d.extras || {}; dropped = d.dropped || {};
     picked = (d.questions || []).filter(id => byId[id] || extras[id]);
     if (d.title) $('oTitle').value = d.title;
-    if (d.options) Object.entries(d.options).forEach(([k, v]) => { if (OPTS.includes(k)) setOpt(k, v); else if (k === 'start') setOpt('oStart', v); else if (k === 'scale') setOpt('oScale', v); });
+    if (d.options) Object.entries(d.options).forEach(([k, v]) => { if (OPTS.includes(k)) setOpt(k, v); else if (k === 'start') setOpt('oStart', v); });
     if (d.kind) setOpt('oKind', d.kind); if (d.unit != null) setOpt('oUnitTag', d.unit);
     const missing = (d.questions || []).length - picked.length;
     if (missing) alert(`${missing} item(s) in that list are not in this question bank and were skipped.`);
@@ -1267,7 +1135,7 @@
         extras = d.extras || {}; dropped = d.dropped || {};
         picked = (d.questions || []).filter(id => byId[id] || extras[id]);
         if (d.title) $('oTitle').value = d.title;
-        if (d.options) Object.entries(d.options).forEach(([k, v]) => { if (OPTS.includes(k)) setOpt(k, v); else if (k === 'start') setOpt('oStart', v); else if (k === 'scale') setOpt('oScale', v); });
+        if (d.options) Object.entries(d.options).forEach(([k, v]) => { if (OPTS.includes(k)) setOpt(k, v); else if (k === 'start') setOpt('oStart', v); });
         const missing = (d.questions || []).length - picked.length;
         if (missing) alert(`${missing} item(s) in that list are not in this question bank and were skipped.`);
         setCurrent(null); persist(); renderList(); renderSheet();
@@ -1280,12 +1148,13 @@
 
   // ---------- PDF output ----------
   function progress(msg) { const p = $('progress'); p.hidden = !msg; p.textContent = msg || ''; }
-  const download = (bytes, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 60000); };
+  const mimeOf = name => name.endsWith('.docx') ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'application/pdf';
+  const download = (bytes, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([bytes], { type: mimeOf(name) })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 60000); };
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   function showDownloads(files) {
     const list = $('dlList'); list.innerHTML = '';
     files.forEach(([bytes, name]) => {
-      const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+      const url = URL.createObjectURL(new Blob([bytes], { type: mimeOf(name) }));
       const row = document.createElement('div'); row.className = 'row'; row.style.justifyContent = 'space-between';
       row.innerHTML = `<span>${esc(name)} <span class="hint">(${(bytes.length / 1048576).toFixed(1)} MB)</span></span><span><a href="${url}" download="${esc(name)}"><button class="small primary">Save</button></a> <a href="${url}" target="_blank" rel="noopener"><button class="small">Open</button></a></span>`;
       list.appendChild(row);
@@ -1296,145 +1165,25 @@
   }
   $('dlClose').onclick = () => { $('dl').hidden = true; };
   $('dl').addEventListener('click', e => { if (e.target === $('dl')) $('dl').hidden = true; });
-  const PT = 72, MARGIN = 36, PH = 792;
-  async function makePDF(M, mode, version, label) {
-    const doc = await PDFDocument.create(); doc.registerFontkit(window.fontkit);
-    const F = await doc.embedFont(FONTB.serif, { subset: true }), FB = await doc.embedFont(FONTB.bold, { subset: true }), FI = await doc.embedFont(FONTB.italic, { subset: true });
-    const imgCache = {};
-    async function image(path) {
-      if (imgCache[path]) return imgCache[path];
-      let im;
-      if (path.startsWith('data:')) { const b = b64bytes(path.split(',')[1]); im = /^data:image\/jpe?g/i.test(path) ? await doc.embedJpg(b) : await doc.embedPng(b); }
-      else im = await doc.embedPng(bytesOf(path));
-      return (imgCache[path] = im);
-    }
-    const X = xin => MARGIN + xin * PT, Y = (yin, hin) => PH - MARGIN - yin * PT - (hin || 0) * PT;
-    const text = (page, s, xin, baseIn, size, font, opts) => page.drawText(clean(s), Object.assign({ x: X(xin), y: PH - MARGIN - baseIn * PT, size, font, color: rgb(0, 0, 0) }, opts || {}));
-    const textRight = (page, s, xRightIn, baseIn, size, font) => page.drawText(clean(s), { x: X(xRightIn) - font.widthOfTextAtSize(clean(s), size), y: PH - MARGIN - baseIn * PT, size, font });
-    const line = (page, x0, y0, x1, y1, t) => page.drawLine({ start: { x: X(x0), y: PH - MARGIN - y0 * PT }, end: { x: X(x1), y: PH - MARGIN - y1 * PT }, thickness: t || 1, color: rgb(0, 0, 0) });
-    const rectW = (page, xin, yin, win, hin) => page.drawRectangle({ x: X(xin), y: Y(yin, hin), width: win * PT, height: hin * PT, color: rgb(1, 1, 1), borderWidth: 0 });
-    const title = $('oTitle').value;
-    const numAt = (page, n, xin, yin) => textRight(page, String(n), xin + GUTTER - 0.06, yin + 0.01 + 10.5 / 72, 11, F);
-    async function drawCustom(page, it, xin, yin) {
-      const lay = version === 'B' ? it.layB : it.lay;
-      for (const o of lay.ops) {
-        if (o.t === 'img') { const im = await image(o.src); page.drawImage(im, { x: X(xin + o.x), y: Y(yin + o.y, o.h), width: o.w * PT, height: o.h * PT }); }
-        else text(page, o.s, xin + o.x, yin + o.y, o.pt, F);
-      }
-    }
-    if (mode === 'sheet') {
-      let first = true;
-      for (let pi = 0; pi < M.pages.length; pi++) {
-        const pg = M.pages[pi];
-        if (pg.pdf) { const src = await PDFDocument.load(b64bytes(pg.pdf.pdf)); const [cp] = await doc.copyPages(src, [0]); doc.addPage(cp); continue; }
-        const page = doc.addPage([612, PH]);
-        if (first) {
-          first = false;
-          text(page, title, 0, 0.3, 14, FB);
-          if (label) text(page, label, FB.widthOfTextAtSize(clean(title), 14) / PT + 0.2, 0.3, 11, F);
-          if (opt('oBlanks')) textRight(page, 'Name ____________________________   Date __________   Period _____', PAGE_W, 0.3, 11, F);
-          line(page, 0, 0.4, PAGE_W, 0.4, 1.5);
-          if (opt('oNote')) text(page, 'Some questions may require the use of the Reference Tables for Physical Setting/Chemistry.', 0, 0.62, 10, FI);
-        }
-        pg.rules.forEach(r => { if (r.h > 0) line(page, r.x, r.y, r.x, r.y + r.h, 0.8); });
-        for (const p of pg.items) {
-          const it = p.item;
-          if (it.kind === 'brk') continue;
-          if (it.kind === 'nb' && it.bl.kind === 'lead' && it.bl.tpl) {
-            const lay = leadLayout(it, M);
-            for (const o of lay.ops) text(page, o.s, p.x + 0.28 * it.k + o.x, p.y + o.y, o.pt, F);
-            continue;
-          }
-          if (it.kind === 'nb') {
-            const qq = it.bl.kind === 'q' ? it.c.questions.find(x => x.q === it.bl.q) : null;
-            const src = (version === 'B' && qq && qq.b) ? qq.b.img : it.bl.img;
-            const im = await image(src); page.drawImage(im, { x: X(p.x), y: Y(p.y, it.h), width: it.w * PT, height: it.h * PT });
-            const kk = it.w / it.bl.w_in;
-            for (const sl of (it.bl.slots || [])) {
-              let num = it.bl.kind === 'q' ? it.n : (() => { const owner = [].concat(...M.pages.map(x => x.items)).filter(o => o.item.kind === 'nb' && o.item.c === it.c && o.item.bl.kind === 'q'); const near = owner.sort((a, b) => Math.abs(a.item.bl.q - sl.q) - Math.abs(b.item.bl.q - sl.q))[0]; return near ? near.item.n : ''; })();
-              const right = p.x + (sl.x_in + sl.w_in) * kk + 0.02, top = p.y + sl.y_in * kk, hh = sl.h_in * kk, size = sl.size_pt * kk;
-              const s = String(num), w = F.widthOfTextAtSize(s, size) / PT;
-              rectW(page, right - Math.max(w, sl.w_in * kk) - 0.03, top, Math.max(w, sl.w_in * kk) + 0.05, hh);
-              text(page, s, right - w, top + hh - hh * 0.22, size, F);
-              if (M.blank && it.bl.kind === 'q') { const qq = it.c.questions.find(x => x.q === it.bl.q); if (qq && qq.mc) { const bx = p.x + sl.x_in * kk - BLANK_GAP; line(page, bx - BLANK_W, top + hh - 0.02, bx, top + hh - 0.02, 0.7); } }
-            }
-            continue;
-          }
-          // number and answer blank go on AFTER the image: an indented crop can reach under the number
-          const numbering = () => { if (it.kind === 'q' || it.kind === 'cq') numAt(page, it.n, p.x, p.y); if (M.blank && it.kind === 'q') line(page, p.x + BLANK_IN - BLANK_W, p.y + 0.14, p.x + BLANK_IN, p.y + 0.14, 0.7); };
-          if (it.custom) { await drawCustom(page, it, p.x + GUTTER, p.y); numbering(); continue; }
-          if (it.kind === 'cq') {
-            const im = await image(it.img); page.drawImage(im, { x: X(p.x + GUTTER - (it.indent || 0)), y: Y(p.y, it.sh), width: it.sw * PT, height: it.sh * PT });
-            if (it.rh) { const ir = await image(it.cq.resp.img); page.drawImage(ir, { x: X(p.x + GUTTER), y: Y(p.y + it.sh + 0.06, it.rh), width: it.rw * PT, height: it.rh * PT }); }
-            numbering(); continue;
-          }
-          const path = (it.kind === 'q' && version === 'B') ? it.imgB : it.img;
-          const im = await image(path);
-          page.drawImage(im, { x: X(p.x + GUTTER - (it.indent || 0)), y: Y(p.y, it.h), width: it.w * PT, height: it.h * PT });
-          numbering();
-          if (it.kind === 'stim' && it.slots) {
-            const k = it.w / (it.stim.w_in || it.w);
-            it.slots.forEach(sl => {
-              const qi = slotOwner(M, it, sl); if (!qi) return;
-              const bx = p.x + GUTTER + sl.x_in * k - 0.02, by = p.y + sl.y_in * k, bw = sl.w_in * k + 0.04, bh = sl.h_in * k, size = sl.size_pt * k;
-              rectW(page, bx, by, bw, bh);
-              const s = String(qi.item.n), w = F.widthOfTextAtSize(s, size) / PT;
-              text(page, s, bx + (bw - w) / 2, by + bh - bh * 0.22, size, F);
-            });
-          }
-        }
-        text(page, String(pi + 1), PAGE_W / 2 - 0.05, PAGE_H + 0.3, 9, F, { color: rgb(.27, .27, .27) });
-      }
-    } else {
-      const src = opt('oSrc'), crPages = opt('oCRKey');
-      if (opt('oKey')) {
-        const page = doc.addPage([612, PH]);
-        text(page, `${title} — Answer Key`, 0, 0.22, 13, FB);
-        const rowH = 0.21, colW = src ? 3.9 : 1.6; let x = 0;
-        for (let i = 0; i < M.order.length; i += 40) {
-          const ch = M.order.slice(i, i + 40); let y = 0.45;
-          const cols = src ? [0.5, 1.1, colW - 1.6] : [0.5, 1.1];
-          const cell = (s, cx, cw, yy, font, size, color) => { const w = font.widthOfTextAtSize(clean(s), size) / PT; text(page, s, x + cx + (cw - w) / 2, yy + 0.15, size, font, color ? { color } : {}); };
-          const rowLines = yy => { line(page, x, yy, x + colW, yy, 0.6); };
-          rowLines(y); cell('#', 0, cols[0], y, FB, 10.5); cell('Answer', cols[0], cols[1], y, FB, 10.5); if (src) cell('Source', cols[0] + cols[1], cols[2], y, FB, 10.5);
-          y += rowH; rowLines(y);
-          ch.forEach(o => {
-            cell(String(o.n), 0, cols[0], y, F, 10.5);
-            const a = o.cr ? (o.key && crPages ? 'see scoring pages' : 'see rating guide') : String((version === 'B' ? o.answerB : o.answer) ?? '?');
-            cell(a, cols[0], cols[1], y, F, o.cr ? 8 : 10.5, o.cr ? rgb(.33, .33, .33) : null);
-            if (src) { let s = sourceText(o); while (F.widthOfTextAtSize(clean(s), 8) / PT > cols[2] - 0.1 && s.length > 4) s = s.slice(0, -2); cell(s, cols[0] + cols[1], cols[2], y, F, 8, rgb(.33, .33, .33)); }
-            y += rowH; rowLines(y);
-          });
-          [0, cols[0], cols[0] + cols[1], colW].forEach(v => line(page, x + v, 0.45, x + v, y, 0.6));
-          x += colW + 0.25;
-        }
-        if (opt('oRefBlock')) {
-          const lines = refLines(M.tabs);
-          let y = 0.45 + rowH * (Math.min(40, M.order.length) + 1) + 0.3;
-          line(page, 0, y, PAGE_W, y, 0.8); y += 0.22;
-          text(page, 'Reference tables needed', 0, y, 10.5, FB); text(page, '(2011 edition letters; bold = not on the 2025 edition)', 1.75, y, 10.5, F); y += 0.24;
-          const parts = lines.length ? lines.map(l => ({ s: `${l.label}: ${l.nums.join(', ')}`, old: l.old })) : [{ s: 'none beyond the periodic table', old: false }];
-          let cx = 0;
-          for (const part of parts) {
-            const font = part.old ? FB : F, w = font.widthOfTextAtSize(clean(part.s), 10.5) / PT + 0.3;
-            if (cx + w > PAGE_W && cx > 0) { cx = 0; y += 0.2; }
-            text(page, part.s, cx, y, 10.5, font); cx += w;
-          }
-        }
-      }
-      for (let ki = 0; ki < M.keyPages.length; ki++) {
-        const pg = M.keyPages[ki], page = doc.addPage([612, PH]);
-        text(page, `${title} — Constructed-response scoring (from the NYSED rating guides)${ki ? ', continued' : ''}`, 0, 0.22, 12, FB);
-        for (const p of pg.items) { const it = p.item; numAt(page, it.n, 0, p.y); const im = await image(it.img); page.drawImage(im, { x: X(GUTTER), y: Y(p.y, it.h), width: it.w * PT, height: it.h * PT }); }
-      }
-      if (!doc.getPageCount()) { const page = doc.addPage([612, PH]); text(page, `${title} — Answer Key`, 0, 0.22, 13, FB); text(page, 'No key pages were selected in Worksheet settings.', 0, 0.5, 11, F); }
-    }
-    return doc.save();
-  }
+  const pdfOpts = label => ({ title: $('oTitle').value, blanks: !!opt('oBlanks'), note: !!opt('oNote'), key: !!opt('oKey'), crKey: !!opt('oCRKey'), refBlock: !!opt('oRefBlock'), src: !!opt('oSrc'), label });
+  const makePDF = (M, mode, version, label) => ENG.makePDF(M, mode, version, pdfOpts(label));
+  const DOCX = window.TextDOCX && window.docx ? TextDOCX.create({ docx: window.docx, image: p => bytesOf(p), engine: ENG }) : null;
+  const makeDOCX = async (M, mode, version, label) => new Uint8Array(await (await DOCX.makeDOCX(M, mode, version, pdfOpts(label))).arrayBuffer());
+  $('btnWord').onclick = async () => {
+    if (!picked.length) return;
+    if (!DOCX) { alert('The Word library (lib/docx.umd.js) was not found next to the app.'); return; }
+    try {
+      progress('Loading questions…'); await ensurePaths(neededPaths());
+      const M = buildModel(); const d = versionDocs(); const files = [];
+      for (const s of d.sheets) { progress(`Building ${safeName()}${s.suffix}.docx…`); files.push([await makeDOCX(M, 'sheet', s.v, s.label), safeName() + s.suffix + '.docx']); }
+      for (const k of d.keys) { progress(`Building ${safeName()}${k.suffix}.docx…`); files.push([await makeDOCX(M, 'key', k.v, null), safeName() + k.suffix + '.docx']); }
+      progress(null); showDownloads(files);
+    } catch (err) { console.error(err); progress(null); alert('The Word file could not be made: ' + err.message); }
+  };
   $('btnPDF').onclick = async () => {
     if (!picked.length) return;
     try {
-      progress('Loading images…'); await ensurePaths(neededPaths());
+      progress('Loading questions…'); await ensurePaths(neededPaths());
       const M = buildModel(); const d = versionDocs(); const files = [];
       for (const s of d.sheets) { progress(`Building ${safeName()}${s.suffix}.pdf…`); files.push([await makePDF(M, 'sheet', s.v, s.label), safeName() + s.suffix + '.pdf']); }
       for (const k of d.keys) { progress(`Building ${safeName()}${k.suffix}.pdf…`); files.push([await makePDF(M, 'key', k.v, null), safeName() + k.suffix + '.pdf']); }
@@ -1443,7 +1192,12 @@
   };
 
   // ---------- custom question builder ----------
-  let editing = null, pendingDiagram = null;
+  let editing = null, pendingDiagram = null, choiceImgs = [null, null, null, null];
+  // uploaded pictures are shrunk to at most 900 px wide so the browser's storage stays small
+  const shrinkImage = (dataURL, maxW) => new Promise(res => { const im = new Image(); im.onload = () => { const k = Math.min(1, maxW / im.naturalWidth); if (k >= 1) { res({ src: dataURL, w: im.naturalWidth, h: im.naturalHeight }); return; } const cv = document.createElement('canvas'); cv.width = Math.round(im.naturalWidth * k); cv.height = Math.round(im.naturalHeight * k); cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height); res({ src: cv.toDataURL('image/png'), w: cv.width, h: cv.height }); }; im.src = dataURL; });
+  const cimgInfo = () => { const n = choiceImgs.filter(Boolean).length; $('mCimgInfo').textContent = n ? `${n} of 4 choices have a picture${n < 4 ? ' — with a mix, the pictures print in a stacked list; four pictures print as a 2 × 2 grid' : ' — printed as a 2 × 2 grid with (1)–(4) underneath'}.` : ''; document.querySelectorAll('.cimgclear').forEach(b => { b.hidden = !choiceImgs[Number(b.dataset.k)]; }); };
+  ['mD1', 'mD2', 'mD3', 'mD4'].forEach((id, k) => { $(id).onchange = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = async () => { choiceImgs[k] = await shrinkImage(r.result, 900); cimgInfo(); previewBuilder(); }; r.readAsDataURL(f); }; });
+  document.querySelectorAll('.cimgclear').forEach(b => { b.onclick = () => { const k = Number(b.dataset.k); choiceImgs[k] = null; $('mD' + (k + 1)).value = ''; cimgInfo(); previewBuilder(); }; });
   const mUnit = $('mUnit'), mType = $('mType');
   UORDER.forEach(u => mUnit.append(new Option(uLabel(u), u)));
   mUnit.append(new Option('Misc / other', 'misc'));
@@ -1463,18 +1217,20 @@
       author: $('mAuthor').value.trim().toUpperCase(),
       diagram: pendingDiagram ? pendingDiagram.src : (editing && editing.diagram) || null,
       dW: pendingDiagram ? pendingDiagram.w : (editing && editing.dW) || 0, dH: pendingDiagram ? pendingDiagram.h : (editing && editing.dH) || 0,
+      cimgs: choiceImgs.some(Boolean) ? choiceImgs.map(c => c ? { src: c.src, w: c.w, h: c.h } : null) : null,
     };
   }
   function previewBuilder() {
     const q = formQuestion(); const full = q.width === 'full';
-    $('mPreview').outerHTML = customHTML(layoutCustom(Object.assign({ id: 'x' }, q), full ? 7 : 3.2, CUSTOM_PT), CUSTOM_PT, 'mPreview');
+    $('mPreview').outerHTML = opsHTML(ENG.layoutBlocks(ENG.customBlocks(q), full ? 7 : 3.2, 11.5, { id: 'x' }), 'mPreview');
   }
   function openBuilder(q) {
-    editing = q || null; pendingDiagram = null;
+    editing = q || null; pendingDiagram = null; choiceImgs = q && q.cimgs ? q.cimgs.map(c => c ? Object.assign({}, c) : null) : [null, null, null, null];
+    ['mD1', 'mD2', 'mD3', 'mD4'].forEach(id => { $(id).value = ''; }); cimgInfo();
     $('mTitle').textContent = q ? 'Edit question' : 'New multiple-choice question';
     $('mIntro').value = q ? q.intro || '' : ''; $('mStem').value = q ? q.stem : '';
     ['mC1', 'mC2', 'mC3', 'mC4'].forEach((id, i) => { $(id).value = q ? q.choices[i] : ''; });
-    $('mAns').value = q ? q.answer : 1; $('mWidth').value = q ? q.width : 'half'; $('mAuthor').value = q ? q.author || '' : (localStorage.getItem('ctb.author') || (ME && ME.email ? ME.email.split('@')[0].replace(/[^a-z]/gi, '').slice(0, 2).toUpperCase() + (ME.email.split('.')[1] || '').charAt(0).toUpperCase() : ''));
+    $('mAns').value = q ? q.answer : 1; $('mWidth').value = q ? q.width : 'half'; $('mAuthor').value = q ? q.author || '' : (localStorage.getItem('ttb.author') || (ME && ME.email ? ME.email.split('@')[0].replace(/[^a-z]/gi, '').slice(0, 2).toUpperCase() + (ME.email.split('.')[1] || '').charAt(0).toUpperCase() : ''));
     $('mExport').hidden = SHARED;
     $('mRef').value = q ? (q.ref || 'none') : 'none'; $('mTables').value = q ? (q.tables || []).join(', ') : '';
     mUnit.value = q ? String(q.unit) : 'misc'; fillBuilderTypes(q ? q.type : 'misc');
@@ -1485,7 +1241,7 @@
   $('mDiagram').onchange = e => {
     const f = e.target.files[0]; if (!f) return;
     const r = new FileReader();
-    r.onload = () => { const im = new Image(); im.onload = () => { pendingDiagram = { src: r.result, w: im.naturalWidth, h: im.naturalHeight }; $('mDiagramInfo').textContent = `${f.name} (${im.naturalWidth}×${im.naturalHeight} px)`; previewBuilder(); }; im.src = r.result; };
+    r.onload = async () => { pendingDiagram = await shrinkImage(r.result, 1200); $('mDiagramInfo').textContent = `${f.name} (${pendingDiagram.w}×${pendingDiagram.h} px)`; previewBuilder(); };
     r.readAsDataURL(f);
   };
   ['mIntro', 'mStem', 'mC1', 'mC2', 'mC3', 'mC4', 'mAns', 'mWidth', 'mType', 'mAuthor', 'mRef', 'mTables'].forEach(id => $(id).addEventListener('input', previewBuilder));
@@ -1493,15 +1249,15 @@
   $('modal').addEventListener('click', e => { if (e.target === $('modal')) $('modal').hidden = true; });
   function saveCustomStore() {
     const mine = Q.filter(q => q.kind === 'custom').map(q => ({ id: q.id, intro: q.intro, stem: q.stem, choices: q.choices, answer: q.answer, width: q.width,
-      unit: q.unit, type: q.type, ref: q.ref, tables: q.tables, author: q.author, diagram: q.diagram, dW: q.dW, dH: q.dH, created: q.created, updated: q.updated }));
-    try { localStorage.setItem('ctb.custom', JSON.stringify(mine)); }
+      unit: q.unit, type: q.type, ref: q.ref, tables: q.tables, author: q.author, diagram: q.diagram, dW: q.dW, dH: q.dH, cimgs: q.cimgs || null, created: q.created, updated: q.updated }));
+    try { localStorage.setItem('ttb.custom', JSON.stringify(mine)); }
     catch (e) { alert('Your browser storage is full, so this question could not be saved locally. Use "Export my questions" and keep the file in the bank folder instead.'); }
     return mine;
   }
   $('mSave').onclick = () => {
     const q = formQuestion();
-    if (!q.stem || q.choices.some(c => !c)) { alert('Please fill in the question and all four choices.'); return; }
-    if (q.author) localStorage.setItem('ctb.author', q.author);
+    if (!q.stem || q.choices.some((c, k) => !c && !(q.cimgs && q.cimgs[k]))) { alert('Please fill in the question and all four choices (text or a picture).'); return; }
+    if (q.author) localStorage.setItem('ttb.author', q.author);
     const now = Date.now();
     if (editing) { decorate(Object.assign(editing, q, { updated: now })); }
     else {
@@ -1530,7 +1286,7 @@
 
   setBank(bankMode); renderSheet();
   if (location.hash.includes('new')) openBuilder(null);
-  window.CTB = { buildModel, renderSheet, makePDF, versionDocs, get picked() { return picked; }, set picked(v) { picked = v; persist(); renderSheet(); } };
+  window.CTB = { buildModel, renderSheet, makePDF, versionDocs, thumbHTML, openPreview, ensureExam, ENG, TEXT, get picked() { return picked; }, set picked(v) { picked = v; persist(); renderSheet(); } };
 })();
 </script>
 </body>
