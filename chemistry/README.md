@@ -1,11 +1,12 @@
-# Chem Test Builder — text edition (local build, not yet deployed)
+# Chem Test Builder — text edition
 
 `Text Test Builder.html` is the Chem Test Builder rebuilt on the Text Bank: every Regents question is typeset from text
 (Liberation Serif + a STIX Two Math symbol subset) instead of being pasted in as a cropped image. Figures, tables, graphs,
 structural formulas and answer-booklet templates are still pictures, at their printed size.
 
-Open the HTML file directly (double-click) — it works offline like the image edition. Nothing in `Test Builder\` is touched;
-this folder is self-contained.
+Live at https://qthomson.github.io/science-test-builder/chemistry/ (and through the school Apps Script link for the shared library).
+The HTML file also opens directly (double-click) and works offline. `tools\deploy_site.py` syncs this folder to the site repo;
+`Test Builder Backenduild_appsscript.py` rebuilds the Apps Script pages from it.
 
 ## What is different from the image edition
 
