@@ -53,7 +53,7 @@
 </head>
 <body>
 <header>
-  <div class="badge" title="Home: choose a subject" style="cursor:pointer" onclick="try { localStorage.removeItem('stb.subject'); } catch (e) {} location.href = '../index.html';">OP</div>
+  <div class="badge" title="Home: choose a subject" style="cursor:pointer" onclick="try { localStorage.removeItem('stb.subject'); } catch (e) {} location.href = window.HOME_URL ? window.HOME_URL + '?home=1' : '../index.html';">OP</div>
   <h1>Unit mapper</h1>
   <span class="sub">Decide which unit each question archetype belongs to, and the order of the units. The test builder follows this file.</span>
   <span class="spacer"></span>
@@ -74,7 +74,7 @@
   const $ = id => document.getElementById(id);
   const B = window.BANK, BN = window.BANK_NEW || { clusters: [], types: {}, unit_order: [] };
   const SHARED = !!(window.google && google.script && google.script.run);
-  const call = (fn, ...args) => new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(e => rej(new Error(e.message || String(e))))[fn](...args));
+  const call = (fn, ...args) => new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(e => rej(new Error(e.message || String(e)))).rpc(fn, args, window.SUBJECT_ID || (window.BANK && window.BANK.subject) || 'chemistry'));
   if (!B) { $('left').innerHTML = '<div class="warn">bank/bank.js not found. Keep this page in the Chem Test Builder folder.</div>'; return; }
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 

@@ -376,8 +376,10 @@
 // is a single-subject copy and the folders sit next to the page. The choice is kept in localStorage ('stb.subject');
 // ?subject=physics in the URL overrides it. Later, the shared-library account can carry the preference (see whoAmI).
 (function () {
-  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610011740';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
-  const url = new URLSearchParams(location.search).get('subject');
+  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610021506';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
+  // On the Apps Script deployment the server injects SUBJECT_PARAM / HOME_URL / SITE_ROOT (build_appsscript.py); on the website they are absent
+  const ROOT = window.SITE_ROOT || '', HOME = window.HOME_URL || location.pathname;
+  const url = window.SUBJECT_PARAM || new URLSearchParams(location.search).get('subject');
   let sid = url || (function () { try { return localStorage.getItem('stb.subject'); } catch (e) { return null; } })();
   const ok = s => S && S.some(x => x.id === s && x.ready);
   if (S && url && ok(url)) { try { localStorage.setItem('stb.subject', url); } catch (e) {} }
@@ -389,15 +391,15 @@
       '<div style="background:#5a0a11;color:#fff;padding:14px 24px;font-family:Georgia,serif;font-size:20px">Orchard Park CSD · Science Test Builder</div>' +
       '<div style="max-width:560px;margin:60px auto;padding:0 16px"><h2 style="font-family:Georgia,serif;color:#3d070b">Which subject?</h2>' +
       S.map(s => s.ready
-        ? '<div style="display:flex;gap:10px;align-items:stretch;margin:12px 0"><a href="?subject=' + s.id + '" style="flex:1;display:block;background:#fff;border:1px solid #ddd9d9;border-radius:12px;padding:16px 20px;color:#3d070b;text-decoration:none;font-size:17px"><b style="font-family:Georgia,serif">' + s.name + '</b><br><span style="color:#5b5454;font-size:13px">' + (s.note || '') + '</span></a>' +
-          '<a href="' + s.id + '/unit-mapper.html" title="Reorder the units and move question types between them" style="flex:0 0 22%;display:grid;place-items:center;background:#fff;border:1px solid #ddd9d9;border-radius:12px;color:#3d070b;text-decoration:none;font-size:14px;text-align:center">Units &amp;<br>question types</a></div>'
+        ? '<div style="display:flex;gap:10px;align-items:stretch;margin:12px 0"><a href="' + HOME + '?subject=' + s.id + '" style="flex:1;display:block;background:#fff;border:1px solid #ddd9d9;border-radius:12px;padding:16px 20px;color:#3d070b;text-decoration:none;font-size:17px"><b style="font-family:Georgia,serif">' + s.name + '</b><br><span style="color:#5b5454;font-size:13px">' + (s.note || '') + '</span></a>' +
+          '<a href="' + (window.HOME_URL ? HOME + '?page=mapper&subject=' + s.id : s.id + '/unit-mapper.html') + '" title="Reorder the units and move question types between them" style="flex:0 0 22%;display:grid;place-items:center;background:#fff;border:1px solid #ddd9d9;border-radius:12px;color:#3d070b;text-decoration:none;font-size:14px;text-align:center">Units &amp;<br>question types</a></div>'
         : '<div style="display:block;background:#f0eeee;border:1px solid #e4e0e0;border-radius:12px;padding:16px 20px;margin:12px 0;color:#9a9292;font-size:17px"><b style="font-family:Georgia,serif">' + s.name + '</b><br><span style="font-size:13px">coming soon</span></div>').join('') +
       '<p style="color:#5b5454;font-size:13px">Your choice is remembered on this computer until you come back here with the OP button.</p></div></div>');
     return;
   }
-  window.SITE_BASE = base;
+  window.SITE_BASE = ROOT + base;
   ['bank/subject.js" onerror="window.SUBJECT = null', 'bank/reftables.js" onerror="window.REFTABLES = null', 'bank/bank.js', 'bank-new/new.js" onerror="window.BANK_NEW = null', 'bank/unit-map.js" onerror="window.UNIT_MAP = null', 'bank/custom.js" onerror="window.CUSTOM = window.CUSTOM || []']
-    .forEach(src => document.write('<script src="' + base + src.replace(/\.js/, '.js?v=' + BUILD) + '"><\/script>'));
+    .forEach(src => document.write('<script src="' + ROOT + base + src.replace(/\.js/, '.js?v=' + BUILD) + '"><\/script>'));
 })();
 </script>
 <script>
@@ -408,14 +410,14 @@
   if (!B) { $('empty').textContent = 'bank/bank.js not found. Keep this file in the same folder as the "bank" and "lib" folders.'; return; }
   // ---------- shared mode: this page is served by the Apps Script backend (department library, sign-in, shared questions)
   const SHARED = !!(window.google && google.script && google.script.run);
-  const call = (fn, ...args) => new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(e => rej(new Error(e.message || String(e))))[fn](...args));
+  const call = (fn, ...args) => new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(e => rej(new Error(e.message || String(e)))).rpc(fn, args, window.SUBJECT_ID || 'chemistry'));
   let ME = null;
   if (SHARED) {
     try {
       const [me, um, cus] = await Promise.all([call('whoAmI'), call('getUnitMap'), call('listCustom')]);
       ME = me; window.UNIT_MAP = um || window.UNIT_MAP || null; window.CUSTOM = cus || [];
-      // per-account subject (when the backend returns one): used when this computer has no choice stored yet
-      if (me && me.subject && window.SUBJECTS && !localStorage.getItem('stb.subject')) { localStorage.setItem('stb.subject', me.subject); if (me.subject !== window.SUBJECT_ID) location.href = location.pathname + '?subject=' + me.subject; }
+      // per-account subject: the server opens the remembered subject (doGet); here we record the one in use
+      if (me && window.SUBJECTS && window.SUBJECT_ID && me.subject !== window.SUBJECT_ID) call('setSubject', window.SUBJECT_ID).catch(() => {});
       $('whoami').textContent = me.email ? '· ' + me.email : '';
     } catch (e) { alert('The shared library could not be reached: ' + e.message + '\nYou can keep working; saving will fall back to files.'); }
   }
@@ -956,13 +958,15 @@
   $('btnSettings').onclick = () => { versionHint(); $('settings').hidden = false; };
   if (window.SUBJECTS) {                             // merged site: the OP badge goes home and forgets the subject
     const badge = document.querySelector('header .badge');
-    if (badge) { badge.style.cursor = 'pointer'; badge.title = 'Home: choose a subject'; badge.onclick = () => { try { localStorage.removeItem('stb.subject'); } catch (e) {} location.href = location.pathname; }; }
+    if (badge) { badge.style.cursor = 'pointer'; badge.title = 'Home: choose a subject'; badge.onclick = () => { try { localStorage.removeItem('stb.subject'); } catch (e) {}
+      if (window.google && google.script && google.script.run) google.script.run.rpc('clearSubject', [], window.SUBJECT_ID || '');   // forget the per-account subject too
+      location.href = window.HOME_URL ? window.HOME_URL + '?home=1' : location.pathname; }; }
   }
   if (window.SUBJECTS) {                             // merged site: subject switch in the settings
     $('subjectRow').hidden = false;
     window.SUBJECTS.forEach(s => { const o = new Option(s.name + (s.ready ? '' : ' (coming soon)'), s.id); o.disabled = !s.ready; $('oSubject').append(o); });
     $('oSubject').value = window.SUBJECT_ID;
-    $('oSubject').onchange = () => { try { localStorage.setItem('stb.subject', $('oSubject').value); } catch (e) {} location.href = location.pathname + '?subject=' + $('oSubject').value; };
+    $('oSubject').onchange = () => { try { localStorage.setItem('stb.subject', $('oSubject').value); } catch (e) {} location.href = (window.HOME_URL || location.pathname) + '?subject=' + $('oSubject').value; };
   }
   $('sClose').onclick = () => { $('settings').hidden = true; };
   $('settings').addEventListener('click', e => { if (e.target === $('settings')) $('settings').hidden = true; });
