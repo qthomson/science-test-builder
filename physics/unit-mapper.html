@@ -38,6 +38,7 @@
   tr.row:hover td { background: #fbf7f7; cursor: pointer; }
   tr.row.sel td { background: var(--maroon-tint); }
   tr.changed td:first-child { border-left: 4px solid var(--maroon); }
+  tr.retired td { color: #a39c9c; } tr.retired td:nth-child(2) { text-decoration: line-through; }
   td.n { color: var(--soft); white-space: nowrap; width: 46px; }
   td.cnt { color: var(--soft); text-align: right; width: 40px; }
   td.u select { width: 100%; }
@@ -182,18 +183,21 @@
     const cats = {};
     Object.keys(types).map(Number).sort((a, b) => a - b).forEach(t => { const c = types[t].category || 'Other'; (cats[c] = cats[c] || []).push(t); });
     let h = `<div id="toolbar"><input type="search" id="search" placeholder="Search archetypes" style="width:280px"><span class="hint">Change the unit in the dropdown. A maroon bar marks rows that differ from the bank's current mapping. Click a row for examples.</span></div>`;
-    h += `<table><tr><th>#</th><th>Archetype</th><th style="text-align:right">Qs</th><th style="width:300px">Unit</th></tr>`;
+    h += `<table><tr><th>#</th><th>Archetype</th><th style="text-align:right">Qs</th><th style="width:300px">Unit</th>${kind === 'old' ? '<th title="A retired question type is hidden in the test builder (old Regents questions only)">Retire</th>' : ''}</tr>`;
     Object.keys(cats).sort().forEach(cat => {
-      h += `<tr class="cat"><td colspan="4">${esc(cat)}</td></tr>`;
+      h += `<tr class="cat"><td colspan="5">${esc(cat)}</td></tr>`;
       cats[cat].forEach(t => {
         const changed = String(map[t] ?? '') !== String(base[t] ?? '');
-        h += `<tr class="row ${changed ? 'changed' : ''} ${selected === kind + t ? 'sel' : ''}" data-t="${t}"><td class="n">${prefix}${t}</td><td>${esc(types[t].name)}</td><td class="cnt">${counts[t] || 0}</td><td class="u"><select data-t="${t}">${unitOptions(map[t], kind === 'new' || map[t] == null)}</select></td></tr>`;
+        const ret = kind === 'old' && (M.retired || []).includes(t);
+        h += `<tr class="row ${changed ? 'changed' : ''} ${ret ? 'retired' : ''} ${selected === kind + t ? 'sel' : ''}" data-t="${t}"><td class="n">${prefix}${t}</td><td>${esc(types[t].name)}</td><td class="cnt">${counts[t] || 0}</td><td class="u"><select data-t="${t}">${unitOptions(map[t], kind === 'new' || map[t] == null)}</select></td>${kind === 'old' ? `<td class="ret" style="text-align:center"><input type="checkbox" data-ret="${t}" ${ret ? 'checked' : ''} title="Retire: hide this question type in the test builder"></td>` : ''}</tr>`;
       });
     });
     h += `</table>`;
     $('left').innerHTML = h;
     $('search').oninput = () => { const s = $('search').value.toLowerCase(); $('left').querySelectorAll('tr.row').forEach(tr => { tr.style.display = !s || tr.innerText.toLowerCase().includes(s) ? '' : 'none'; }); };
     $('left').querySelectorAll('select[data-t]').forEach(sel => { sel.onchange = e => { e.stopPropagation(); const v = sel.value; map[sel.dataset.t] = v === '' ? null : v === 'misc' ? 'misc' : Number(v); save(); renderTypes(kind); }; sel.onclick = e => e.stopPropagation(); });
+    $('left').querySelectorAll('input[data-ret]').forEach(cb => { cb.onclick = e => e.stopPropagation();
+      cb.onchange = () => { const t = Number(cb.dataset.ret); M.retired = (M.retired || []).filter(x => x !== t); if (cb.checked) M.retired.push(t); save(); renderTypes(kind); }; });
     $('left').querySelectorAll('tr.row').forEach(tr => tr.onclick = () => { selected = kind + tr.dataset.t; $('left').querySelectorAll('tr.row').forEach(x => x.classList.toggle('sel', x === tr)); showExamples(kind, Number(tr.dataset.t)); });
   }
 
@@ -223,11 +227,11 @@
   function render() { if (tab === 'units') renderUnits(); else renderTypes(tab); status(); }
   function status() {
     const changed = M.units.map(u => u.id).join(',') !== BASE.units.map(u => u.id).join(',') || M.units.some(u => (BASE.units.find(x => x.id === u.id) || {}).name !== u.name) ||
-      Object.keys(M.old).some(t => String(M.old[t] ?? '') !== String(BASE.old[t] ?? '')) || Object.keys(M.new).some(t => String(M.new[t] ?? '') !== String(BASE.new[t] ?? ''));
+      Object.keys(M.old).some(t => String(M.old[t] ?? '') !== String(BASE.old[t] ?? '')) || Object.keys(M.new).some(t => String(M.new[t] ?? '') !== String(BASE.new[t] ?? '')) || (M.retired || []).length > 0;
     document.querySelector('header .sub').textContent = changed ? 'Unsaved differences from the bank — export unit-map.js when you are done.' : 'Matches the bank’s current mapping.';
   }
   $('btnExport').onclick = async () => {
-    const out = { version: 1, updated: new Date().toISOString().slice(0, 10), units: M.units, old: M.old, new: M.new };
+    const out = { version: 1, updated: new Date().toISOString().slice(0, 10), units: M.units, old: M.old, new: M.new, retired: M.retired || [] };
     if (SHARED) { try { await call('saveUnitMap', out); alert('Saved. Every test builder picks this up the next time it opens.'); } catch (e) { alert('Could not save: ' + e.message); } return; }
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['window.UNIT_MAP = ' + JSON.stringify(out, null, 1) + ';\n'], { type: 'text/javascript' })); a.download = 'unit-map.js'; a.click();
   };

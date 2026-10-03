@@ -232,6 +232,7 @@
       <button class="small" id="insCol" title="Ends the current column; the next question starts the next column">Column break</button>
       <button class="small" id="insPage" title="Ends the current page; the next question starts a new page">Page break</button>
       <button class="small" id="insPDF" title="Adds full pages from a PDF of your own (a reference sheet, a diagram page, …)">PDF page…</button>
+      <button class="small" id="insRef" title="Adds a reference table (old or current edition) at this point of the worksheet">Reference table…</button>
       <input type="file" id="filePDF" accept="application/pdf,.pdf" hidden>
     </span>
     <button class="small" id="btnSettings">Worksheet settings…</button>
@@ -290,6 +291,14 @@
   </div>
 </div>
 
+<div id="refdlg" class="modal" hidden>
+  <div class="dialog narrow">
+    <h2>Insert a reference table</h2>
+    <div class="hint">It is added at the end of the worksheet; move it with the arrows like any question.</div>
+    <div id="refList" style="max-height:60vh;overflow:auto;margin:8px 0"></div>
+    <div class="row" style="justify-content:flex-end"><button id="refClose">Close</button></div>
+  </div>
+</div>
 <div id="settings" class="modal" hidden>
   <div class="dialog narrow">
     <h2>Worksheet settings</h2>
@@ -376,7 +385,7 @@
 // is a single-subject copy and the folders sit next to the page. The choice is kept in localStorage ('stb.subject');
 // ?subject=physics in the URL overrides it. Later, the shared-library account can carry the preference (see whoAmI).
 (function () {
-  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610021506';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
+  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610030927';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
   // On the Apps Script deployment the server injects SUBJECT_PARAM / HOME_URL / SITE_ROOT (build_appsscript.py); on the website they are absent
   const ROOT = window.SITE_ROOT || '', HOME = window.HOME_URL || location.pathname;
   const url = window.SUBJECT_PARAM || new URLSearchParams(location.search).get('subject');
@@ -429,6 +438,8 @@
   const NT = BN.types || {};
   let UORDER = BN.unit_order && BN.unit_order.length ? BN.unit_order.slice() : Object.keys(U).map(Number).sort((a, b) => a - b);
   // ---- unit map (bank/unit-map.js from the Unit Mapper page): unit order & names, archetype -> unit
+  { try { const sv = JSON.parse(localStorage.getItem(((window.BANK && window.BANK.subject) || 'ctb') + '.unitmap') || 'null'); if (sv && sv.units) window.UNIT_MAP = sv; } catch (e) { } }
+  const RETIRED = new Set(((window.UNIT_MAP || {}).retired || []).map(Number));
   const UM = window.UNIT_MAP;
   if (UM && UM.units) {
     Object.keys(U).forEach(k => delete U[k]);
@@ -496,7 +507,7 @@
   // ---------- question text and figures: bank-text/<exam>.js files, loaded when first needed ----------
   const IMGS = {}, loading = {};
   // exam of a question / cluster id or of an image path: "2012-01_Q09", "img/2012-01_Q09_1.png", "PSC-S2025_C1Q03r"
-  const examOf = s => { const m = String(s).match(/^(?:img(?:-b)?\/)?(PS[A-Z]-[^_]+)_/); return m ? m[1] : (String(s).match(/(\d{4}-\d{2})_/) || [])[1]; };
+  const examOf = s => { const m = String(s).match(/^(?:img(?:-b)?\/)?([A-Z]{3}-[^_]+)_/); return m ? m[1] : (String(s).match(/(\d{4}-\d{2})_/) || [])[1]; };
   function ensureExam(exam) {
     if (!exam) return Promise.resolve();
     if (!loading[exam]) loading[exam] = new Promise((res, rej) => {
@@ -578,7 +589,7 @@
     fType.innerHTML = '<option value="">All types</option>';
     const used = new Set(Q.map(q => q.type));
     Object.keys(T).map(Number).sort((a, b) => a - b).forEach(t => {
-      if (!used.has(t)) return;
+      if (!used.has(t) || RETIRED.has(t)) return;   // a retired type is not offered
       if (u && String(T[t].unit) !== u) return;
       fType.append(new Option(`${t}. ${T[t].name}`, t));
     });
@@ -618,6 +629,7 @@
   fillSubs();
   if (SUBS.length) { $('fSub').addEventListener('input', renderList); $('nSub').addEventListener('input', renderList); $('nUnit').addEventListener('input', fillSubs); }
   function matches(q) {
+    if (RETIRED.size && (q.kind === 'cluster' ? q.items.every(it => RETIRED.has(it.type)) : q.kind !== 'custom' && RETIRED.has(q.type))) return false;
     const s = $('fSearch').value.trim().toLowerCase();
     const kind = $('fKind').value, want = $('fRef').value;
     if (kind === 'mc' && q.kind !== undefined) return false;
@@ -898,6 +910,22 @@
     extras[id] = extra; picked.push(id); persist(); renderSheet();
   }
   $('insCol').onclick = () => addExtra({ kind: 'brk', type: 'col' });
+  // reference tables added by hand: the library (bank/reflib.js) loads on first use
+  let REFLIB = null;
+  const ensureRefLib = () => REFLIB ? Promise.resolve(REFLIB) : new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = (window.SITE_BASE || '') + 'bank/reflib.js?v=' + (window.BUILD || '');
+    s.onload = () => { REFLIB = Object.fromEntries(((window.REFLIB || {}).items || []).map(e => [e.id, e])); res(REFLIB); };
+    s.onerror = () => rej(new Error('bank/reflib.js is missing next to the app.')); document.head.append(s); });
+  $('insRef').onclick = async () => {
+    try { await ensureRefLib(); } catch (e) { alert(e.message); return; }
+    const all = Object.values(REFLIB), eds = [...new Set(all.map(e => e.edition))].sort().reverse();
+    $('refList').innerHTML = eds.map(ed => `<h3 style="margin:10px 0 4px;font-family:Georgia,serif">${esc(ed)} edition</h3>` +
+      all.filter(e => e.edition === ed).map(e => `<button class="small" data-ref="${esc(e.id)}" style="display:block;width:100%;text-align:left;margin:3px 0">${esc(e.title)}</button>`).join('')).join('');
+    $('refList').querySelectorAll('button[data-ref]').forEach(b => b.onclick = () => { const e = REFLIB[b.dataset.ref]; addExtra({ kind: 'reftab', code: e.id, title: e.title }); $('refdlg').hidden = true; });
+    $('refdlg').hidden = false;
+  };
+  $('refClose').onclick = () => { $('refdlg').hidden = true; };
+  $('refdlg').addEventListener('click', e => { if (e.target === $('refdlg')) $('refdlg').hidden = true; });
   $('insPage').onclick = () => addExtra({ kind: 'brk', type: 'page' });
 
   // ---------- inserted PDF pages ----------
@@ -979,7 +1007,8 @@
     COLGAP = opt('oBlank') ? 0.55 : 0.3;
     const custom = Object.fromEntries(Q.filter(q => q.kind === 'custom').map(q => [q.id, q]));
     const items = ENG.buildItems(picked, { bank: B, bankNew: BN, text: TEXT, custom, extras, dropped, cols, pt, wide: cols === 1, blank: !!opt('oBlank'), note: !!opt('oNote'),
-                                            reftables: window.REFTABLES || null, refTables: opt('oRefTables') || 'off', refConst: opt('oRefConst') || 'off' });
+                                            reftables: window.REFTABLES || null, refTables: opt('oRefTables') || 'off', refConst: opt('oRefConst') || 'off', reflib: REFLIB });
+    if (!REFLIB && picked.some(id => extras[id] && extras[id].kind === 'reftab')) ensureRefLib().then(() => renderSheet()).catch(() => {});   // a saved worksheet with inserted tables
     const M = ENG.buildModel(items, { cols, pt, start: Number(opt('oStart')) || 1, blank: !!opt('oBlank'), note: !!opt('oNote'), crKey: !!opt('oCRKey'), fill: !!opt('oFill') });
     M.scale = pt / 11.5; M.start = Number(opt('oStart')) || 1;
     return M;
@@ -1026,7 +1055,7 @@
       const numPt = 11 * Math.max(1, (M.pt || 11.5) / 11.5), numAsc = numPt / 72 * 0.891;
       pg.items.forEach(p => {
         const it = p.item;
-        const ctl = (it.kind === 'q' || it.kind === 'cq' || it.kind === 'brk' || (it.kind === 'stim' && it.i !== undefined)) ? ctlFor(it) : '';
+        const ctl = (it.kind === 'q' || it.kind === 'cq' || it.kind === 'brk' || (it.kind === 'stim' && it.i !== undefined) || (it.kind === 'ref' && it.manual)) ? ctlFor(it) : '';
         if (it.kind === 'brk') {
           const w = it.type === 'col' ? (PAGE_W - COLGAP) / 2 : PAGE_W - p.x;
           const top = p.atTop ? -0.42 : p.y;
