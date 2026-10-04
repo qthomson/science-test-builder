@@ -186,6 +186,7 @@
   }
 </style>
 <style id="darkEarly">
+  body.boot > *:not(#chooser) { visibility: hidden; }
   /* ---- dark mode: the bars, the sidebar and the dialogs; question cards and worksheet pages stay as printed ---- */
   body.dark { --bg: #1c1717; --panel: #262020; --ink: #ece7e7; --soft: #b5abab; --line: #4a4040; --maroon-tint: #3a2226; --tint-line: #5a3238; --maroon-deep: #f0c9ce; }
   body.dark header { background: #3d070b; }
@@ -211,7 +212,7 @@
 </style>
 </head>
 <body>
-<script>try { if (JSON.parse(localStorage.getItem('stb.prefs') || '{}').dark || /[?&]dark=1/.test(location.search)) document.body.classList.add('dark'); } catch (e) { }</script>
+<script>try { if (JSON.parse(localStorage.getItem('stb.prefs') || '{}').dark || /[?&]dark=1/.test(location.search)) document.body.classList.add('dark'); } catch (e) { } document.body.classList.add('boot'); setTimeout(function () { document.body.classList.remove('boot'); }, 4000); window.addEventListener('load', function () { document.body.classList.remove('boot'); });</script>
 <header>
   <div class="badge" title="Orchard Park CSD — Science">OP</div>
   <h1>Chemistry Test Builder</h1>
@@ -406,24 +407,15 @@
   </div>
 </div>
 
-<script src="lib/pdf-lib.min.js"></script>
-<script src="lib/fontkit.umd.min.js"></script>
-<script src="lib/pdf.worker.min.js"></script>
-<script src="lib/pdf.min.js"></script>
-<script src="lib/fonts.js"></script>
-<script src="lib/textpdf.js?v=202610032350"></script>
-<script src="lib/docx.umd.js"></script>
-<script src="lib/textdocx.js?v=202610032350"></script>
-<script src="lib/appui.js?v=202610032350"></script>
-<script src="lib/writer.js?v=202610032350"></script>
-<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610032350"><\/script>');</script>
-<script src="subjects.js?v=202610032350" onerror="window.SUBJECTS = null"></script>
+<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610040003"><\/script>');</script>
+<script src="lib/appui.js?v=202610040003" onerror="document.body.classList.remove('boot')"></script>
+<script src="subjects.js?v=202610040003" onerror="window.SUBJECTS = null"></script>
 <script>
 // Subject chooser. With subjects.js present (the merged site), the data folders are <subject>/bank…; without it, this
 // is a single-subject copy and the folders sit next to the page. The choice is kept in localStorage ('stb.subject');
 // ?subject=physics in the URL overrides it. Later, the shared-library account can carry the preference (see whoAmI).
 (function () {
-  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610032350';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
+  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610040003';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
   // On the Apps Script deployment the server injects SUBJECT_PARAM / HOME_URL / SITE_ROOT (build_appsscript.py); on the website they are absent
   const ROOT = window.SITE_ROOT || '', HOME = window.HOME_URL || location.pathname;
   if (new URLSearchParams(location.search).get('home') || window.FORCE_HOME) { try { localStorage.removeItem('stb.subject'); } catch (e) {} }   // ?home=1: the home page, whatever subject was open last (the signed-in server passes it as FORCE_HOME)
@@ -434,7 +426,7 @@
   window.SUBJECT_ID = S ? (ok(sid) ? sid : null) : '';
   const base = S ? (window.SUBJECT_ID ? window.SUBJECT_ID + '/' : null) : '';
   if (base === null) {                                  // nothing chosen yet: show the chooser instead of the app
-    window.NO_SUBJECT = true;
+    window.NO_SUBJECT = true; document.body.classList.remove('boot');
     if (window.APPUI_HOME) { window.APPUI_HOME(S, ROOT, HOME); return; }
     document.write('<div id="chooser" style="position:fixed;inset:0;background:#f5f3f2;z-index:9999;font-family:Arial,Helvetica,sans-serif;color:#1a1414">' +
       '<div style="background:#5a0a11;color:#fff;padding:14px 24px;font-family:Georgia,serif;font-size:20px">Orchard Park CSD · Science Test Builder</div>' +
@@ -448,10 +440,20 @@
     return;
   }
   window.SITE_BASE = ROOT + base;
+  if (!(window.APPUI && APPUI.early)) document.body.classList.remove('boot');
   ['bank/subject.js" onerror="window.SUBJECT = null', 'bank/reftables.js" onerror="window.REFTABLES = null', 'bank/bank.js', 'bank-new/new.js" onerror="window.BANK_NEW = null', 'bank/unit-map.js" onerror="window.UNIT_MAP = null', 'bank/custom.js" onerror="window.CUSTOM = window.CUSTOM || []']
-    .forEach(src => document.write('<script src="' + ROOT + base + src.replace(/\.js/, '.js?v=' + BUILD) + '"><\/script>'));
+    .forEach((src, k) => document.write('<script src="' + ROOT + base + src.replace(/\.js/, '.js?v=' + BUILD) + '"><\/script>' + (k ? '' : '<script>if (window.APPUI && APPUI.early) APPUI.early();<\/script>')));
 })();
 </script>
+<script src="lib/pdf-lib.min.js"></script>
+<script src="lib/fontkit.umd.min.js"></script>
+<script src="lib/pdf.worker.min.js"></script>
+<script src="lib/pdf.min.js"></script>
+<script src="lib/fonts.js"></script>
+<script src="lib/textpdf.js?v=202610040003"></script>
+<script src="lib/docx.umd.js"></script>
+<script src="lib/textdocx.js?v=202610040003"></script>
+<script src="lib/writer.js?v=202610040003"></script>
 <script>
 (async function () {
   if (window.NO_SUBJECT) return;                      // the chooser is showing
@@ -506,7 +508,7 @@
   if (SUBJECT.noRef) ['fRef', 'oRefTables', 'oRefConst', 'oNote', 'oRefBlock', 'insRef'].forEach(id => {   // a subject without reference tables (biology)
     const e = $(id); if (!e) return; if (e.type === 'checkbox') e.checked = false;
     (e.closest('.row') || (e.tagName === 'BUTTON' ? e : e.parentElement)).style.display = 'none'; });
-  document.title = SUBJECT.app; document.querySelector('h1').textContent = SUBJECT.name + ' Test Builder';
+  document.title = SUBJECT.app; document.querySelector('h1').textContent = SUBJECT.name + (window.APPUI ? '' : ' Test Builder');
   if ($('oTitle').value === 'Chemistry Review') $('oTitle').value = SUBJECT.defaultTitle;
   const uNum = u => u === 'misc' || u == null ? '?' : SUBJECT.unitCodes ? (SUBJECT.unitCodes[u] != null ? SUBJECT.unitCodes[u] : u) : (uidx(u) >= 0 ? uidx(u) + 1 : u);      // displayed unit number = position in the order
   const uLabel = u => u === 'misc' || u == null ? 'Misc / other' : `Unit ${uNum(u)}: ${U[u] || ''}`;
