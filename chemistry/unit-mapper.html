@@ -85,6 +85,7 @@
 </style>
 </head>
 <body>
+<script>try { if (JSON.parse(localStorage.getItem('stb.prefs') || '{}').dark || /[?&]dark=1/.test(location.search)) document.body.classList.add('dark'); } catch (e) { }</script>
 <header>
   <div class="badge" title="Home: choose a subject" onclick="try { localStorage.removeItem('stb.subject'); } catch (e) {} window.open(window.HOME_URL ? window.HOME_URL + '?home=1' : '../index.html?home=1', '_top');">OP</div>
   <h1 id="h1">Unit order</h1>

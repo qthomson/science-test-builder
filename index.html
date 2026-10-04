@@ -185,8 +185,33 @@
     .page.keypage { display: none !important; }
   }
 </style>
+<style id="darkEarly">
+  /* ---- dark mode: the bars, the sidebar and the dialogs; question cards and worksheet pages stay as printed ---- */
+  body.dark { --bg: #1c1717; --panel: #262020; --ink: #ece7e7; --soft: #b5abab; --line: #4a4040; --maroon-tint: #3a2226; --tint-line: #5a3238; --maroon-deep: #f0c9ce; }
+  body.dark header { background: #3d070b; }
+  body.dark header .badge { background: #2a0508; }
+  body.dark #progress { background: #7a1420; }
+  body.dark button { background: #332b2b; color: #ece7e7; border-color: #4a4040; }
+  body.dark header button { background: #fff; color: #3d070b; border-color: #fff; }
+  body.dark header button.ghost, body.dark header #uiDark { background: transparent; color: #fff; border-color: rgba(255,255,255,.6); }
+  body.dark button.primary { background: #7a1420; color: #fff; border-color: #7a1420; }
+  body.dark #bankswitch button.on, body.dark .viewtog button.on, body.dark .libtabs button.on { background: #7a1420; color: #fff; border-color: #7a1420; }
+  body.dark input, body.dark select, body.dark textarea { background: #1f1a1a; color: #ece7e7; border-color: #4a4040; }
+  body.dark #oTitle.intitle { background: transparent; color: #fff; }
+  body.dark .dialog { background: #262020; color: #ece7e7; border-color: #4a4040; }
+  body.dark .uimenu { background: #2b2424; color: #ece7e7; border-color: #4a4040; }
+  body.dark .uimenu button:hover { background: #3a2226; }
+  body.dark .uimenu .foot, body.dark .uimenu kbd { color: #b5abab; }
+  body.dark .uimenu .sep { border-color: #4a4040; }
+  body.dark .card, body.dark .page, body.dark #pvBody, body.dark .dialog .preview, body.dark .tourbox {
+    --bg: #f5f3f2; --panel: #ffffff; --ink: #1a1414; --soft: #5b5454; --line: #ddd9d9; --maroon-tint: #f4e9ea; --tint-line: #ecd9da; --maroon-deep: #3d070b; color: #1a1414; }
+  body.dark .card button, body.dark .page button, body.dark #pvBody button { background: #fff; color: #1a1414; border-color: #ddd9d9; }
+  body.dark .card .flag { background: transparent; border: 0; color: #a79f9f; }
+  body.dark #pvBody input { background: #fff; }
+</style>
 </head>
 <body>
+<script>try { if (JSON.parse(localStorage.getItem('stb.prefs') || '{}').dark || /[?&]dark=1/.test(location.search)) document.body.classList.add('dark'); } catch (e) { }</script>
 <header>
   <div class="badge" title="Orchard Park CSD — Science">OP</div>
   <h1>Chemistry Test Builder</h1>
@@ -386,19 +411,19 @@
 <script src="lib/pdf.worker.min.js"></script>
 <script src="lib/pdf.min.js"></script>
 <script src="lib/fonts.js"></script>
-<script src="lib/textpdf.js?v=202610032345"></script>
+<script src="lib/textpdf.js?v=202610032350"></script>
 <script src="lib/docx.umd.js"></script>
-<script src="lib/textdocx.js?v=202610032345"></script>
-<script src="lib/appui.js?v=202610032345"></script>
-<script src="lib/writer.js?v=202610032345"></script>
-<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610032345"><\/script>');</script>
-<script src="subjects.js?v=202610032345" onerror="window.SUBJECTS = null"></script>
+<script src="lib/textdocx.js?v=202610032350"></script>
+<script src="lib/appui.js?v=202610032350"></script>
+<script src="lib/writer.js?v=202610032350"></script>
+<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610032350"><\/script>');</script>
+<script src="subjects.js?v=202610032350" onerror="window.SUBJECTS = null"></script>
 <script>
 // Subject chooser. With subjects.js present (the merged site), the data folders are <subject>/bank…; without it, this
 // is a single-subject copy and the folders sit next to the page. The choice is kept in localStorage ('stb.subject');
 // ?subject=physics in the URL overrides it. Later, the shared-library account can carry the preference (see whoAmI).
 (function () {
-  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610032345';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
+  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610032350';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
   // On the Apps Script deployment the server injects SUBJECT_PARAM / HOME_URL / SITE_ROOT (build_appsscript.py); on the website they are absent
   const ROOT = window.SITE_ROOT || '', HOME = window.HOME_URL || location.pathname;
   if (new URLSearchParams(location.search).get('home') || window.FORCE_HOME) { try { localStorage.removeItem('stb.subject'); } catch (e) {} }   // ?home=1: the home page, whatever subject was open last (the signed-in server passes it as FORCE_HOME)
