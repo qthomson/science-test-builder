@@ -407,15 +407,15 @@
   </div>
 </div>
 
-<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610040103"><\/script>');</script>
-<script src="lib/appui.js?v=202610040103" onerror="document.body.classList.remove('boot')"></script>
-<script src="subjects.js?v=202610040103" onerror="window.SUBJECTS = null"></script>
+<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610040109"><\/script>');</script>
+<script src="lib/appui.js?v=202610040109" onerror="document.body.classList.remove('boot')"></script>
+<script src="subjects.js?v=202610040109" onerror="window.SUBJECTS = null"></script>
 <script>
 // Subject chooser. With subjects.js present (the merged site), the data folders are <subject>/bank…; without it, this
 // is a single-subject copy and the folders sit next to the page. The choice is kept in localStorage ('stb.subject');
 // ?subject=physics in the URL overrides it. Later, the shared-library account can carry the preference (see whoAmI).
 (function () {
-  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610040103';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
+  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610040109';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
   // On the Apps Script deployment the server injects SUBJECT_PARAM / HOME_URL / SITE_ROOT (build_appsscript.py); on the website they are absent
   const ROOT = window.SITE_ROOT || '', HOME = window.HOME_URL || location.pathname;
   if (new URLSearchParams(location.search).get('home') || window.FORCE_HOME) { try { localStorage.removeItem('stb.subject'); } catch (e) {} }   // ?home=1: the home page, whatever subject was open last (the signed-in server passes it as FORCE_HOME)
@@ -450,8 +450,8 @@
 <script src="lib/pdf-lib.min.js"></script>
 <script src="lib/fontkit.umd.min.js"></script>
 <script src="lib/fonts.js"></script>
-<script src="lib/textpdf.js?v=202610040103"></script>
-<script src="lib/writer.js?v=202610040103"></script>
+<script src="lib/textpdf.js?v=202610040109"></script>
+<script src="lib/writer.js?v=202610040109"></script>
 <script>
 (async function () {
   if (window.NO_SUBJECT) return;                      // the chooser is showing
@@ -472,7 +472,7 @@
     try {
       // asked at the very start of the page (APPUI.boot) while the files were loading; without that, asked now
       const got = p => (p ? p.then(r => { if (!r.ok) throw r.e; return r.v; }) : null), pre = window.BOOT || {};
-      const bt = await (got(pre.main) || call('boot')), cus = bt.custom || await call('listCustom');
+      const bt = await (got(pre.main) || call('boot')), cus = bt.custom || await (got(pre.custom) || call('listCustom'));
       const me = bt.me, um = bt.unitMap; window.BOOT_PREFS = bt.prefs || {};
       ME = me; window.UNIT_MAP = um || window.UNIT_MAP || null; window.CUSTOM = cus || [];
       $('whoami').textContent = me.email ? '· ' + me.email : '';
