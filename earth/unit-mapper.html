@@ -2,71 +2,122 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Unit Mapper</title>
+<title>Unit Order</title>
 <style>
-  :root { --maroon: #5a0a11; --maroon-deep: #3d070b; --maroon-tint: #f4e9ea; --tint-line: #ecd9da; --bg: #f5f3f2; --ink: #1a1414; --soft: #5b5454; --line: #ddd9d9; }
+  :root { --maroon: #5a0a11; --maroon-deep: #3d070b; --maroon-tint: #f4e9ea; --tint-line: #ecd9da; --bg: #f5f3f2; --panel: #fff; --ink: #1a1414; --soft: #5b5454; --line: #ddd9d9; --warn: #fff3cd; --warn-ink: #6b5200; --warn-line: #e0c36a; }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; }
-  body { font-family: Arial, Helvetica, sans-serif; font-size: 13.5px; color: var(--ink); background: var(--bg); display: grid; grid-template-rows: auto auto 1fr; height: 100vh; }
-  header { background: var(--maroon); color: #fff; padding: 8px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-  header .badge { width: 34px; height: 34px; border-radius: 50%; background: var(--maroon-deep); border: 2px solid #fff; display: grid; place-items: center; font-family: Georgia, serif; font-size: 12px; }
-  header h1 { font-family: Georgia, serif; font-size: 18px; margin: 0; font-weight: normal; }
-  header .sub { opacity: .85; font-size: 12px; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 13.5px; color: var(--ink); background: var(--bg); display: grid; grid-template-rows: auto 1fr; height: 100vh; }
+  header { background: var(--maroon); color: #fff; padding: 8px 16px; display: flex; align-items: center; gap: 10px; }
+  header .badge { width: 34px; height: 34px; border-radius: 50%; background: var(--maroon-deep); border: 2px solid #fff; display: grid; place-items: center; font-family: Georgia, serif; font-size: 12px; cursor: pointer; flex: none; }
+  header h1 { font-family: Georgia, serif; font-size: 18px; margin: 0; font-weight: normal; white-space: nowrap; }
   header .spacer { flex: 1; }
-  button { font: inherit; padding: 6px 14px; border: 1.5px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink); cursor: pointer; }
+  button { font: inherit; padding: 6px 14px; border: 1.5px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--ink); cursor: pointer; white-space: nowrap; }
   button:hover { border-color: var(--maroon); }
-  header button { color: var(--maroon-deep); border-color: #fff; }
-  button.primary { background: var(--maroon-deep); color: #fff; border-color: #fff; }
+  header button { background: #fff; color: #3d070b; border-color: #fff; font-weight: bold; }
+  header button.ghost { background: transparent; color: #fff; border-color: rgba(255,255,255,.6); font-weight: normal; }
   button.small { padding: 2px 9px; font-size: 12px; }
-  button:disabled { opacity: .4; cursor: default; }
-  select, input { font: inherit; padding: 5px 8px; border: 1.5px solid var(--line); border-radius: 8px; background: #fff; }
-  #tabs { display: flex; gap: 6px; padding: 10px 16px 0; background: #fff; border-bottom: 1px solid var(--line); }
-  #tabs button { border-radius: 10px 10px 0 0; border-bottom: none; }
-  #tabs button.on { background: var(--maroon-tint); color: var(--maroon-deep); border-color: var(--tint-line); font-weight: bold; }
-  main { display: grid; grid-template-columns: minmax(0, 1fr) 460px; min-height: 0; }
-  #left { overflow: auto; padding: 14px 16px; }
-  #right { border-left: 1px solid var(--line); background: #fff; overflow: auto; padding: 14px 16px; }
-  #right h3 { font-family: Georgia, serif; font-weight: normal; color: var(--maroon-deep); margin: 0 0 8px; font-size: 16px; }
-  #right .ex { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; background: #fff; }
-  #right .ex .src { font-size: 11px; color: var(--soft); margin-bottom: 4px; }
-  #right .ex img { width: 100%; display: block; }
+  button:disabled { opacity: .45; cursor: default; }
+  button.primary { background: #3d070b; color: #fff; border-color: #3d070b; }
+  select, input[type=text], input[type=search] { font: inherit; padding: 5px 8px; border: 1.5px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); }
   .hint { font-size: 12px; color: var(--soft); }
-  table { border-collapse: collapse; width: 100%; background: #fff; border-radius: 10px; overflow: hidden; }
-  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { background: var(--maroon-tint); color: var(--maroon-deep); font-weight: normal; font-size: 12px; position: sticky; top: 0; }
-  tr.cat td { background: #f1efee; font-family: Georgia, serif; color: var(--maroon-deep); padding-top: 10px; }
-  tr.row:hover td { background: #fbf7f7; cursor: pointer; }
-  tr.row.sel td { background: var(--maroon-tint); }
-  tr.changed td:first-child { border-left: 4px solid var(--maroon); }
-  tr.retired td { color: #a39c9c; } tr.retired td:nth-child(2) { text-decoration: line-through; }
-  td.n { color: var(--soft); white-space: nowrap; width: 46px; }
-  td.cnt { color: var(--soft); text-align: right; width: 40px; }
-  td.u select { width: 100%; }
-  .units li { list-style: none; display: flex; gap: 8px; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; margin: 6px 0; }
-  .units li .pos { width: 60px; color: var(--maroon-deep); font-family: Georgia, serif; }
-  .units li input { flex: 1; }
-  .units li .cnt { color: var(--soft); font-size: 12px; width: 150px; text-align: right; }
-  .units { padding: 0; margin: 0; max-width: 820px; }
-  #toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
-  #status { font-size: 12px; color: var(--soft); }
-  .warn { background: #fdeef0; border: 1px solid #e0b7bb; color: #8b1a1a; padding: 8px 12px; border-radius: 10px; margin-bottom: 10px; font-size: 12.5px; }
+  .chip { font-size: 11px; padding: 1px 8px; border-radius: 999px; background: var(--warn); color: var(--warn-ink); border: 1px solid var(--warn-line); white-space: nowrap; }
+  header .chip { font-size: 12px; padding: 2px 10px; }
+  main { display: grid; grid-template-columns: 300px minmax(0, 1fr); min-height: 0; }
+  main.ex { grid-template-columns: 300px minmax(0, 1fr) 400px; }
+  #units { border-right: 1px solid var(--line); background: var(--panel); overflow: auto; display: flex; flex-direction: column; }
+  .ph { padding: 10px 14px 6px; font-family: Georgia, serif; color: var(--maroon-deep); font-size: 15px; display: flex; align-items: baseline; gap: 8px; }
+  .u { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .u:hover { background: var(--bg); }
+  .u.sel { background: var(--maroon-tint); }
+  .u.over, .u.over.sel { box-shadow: inset 0 0 0 2px var(--maroon); }
+  .u .h, .t .h { color: #b9b1b1; letter-spacing: -2px; cursor: grab; user-select: none; }
+  .u .pos { color: var(--maroon-deep); font-family: Georgia, serif; width: 34px; flex: none; }
+  .u .nm { flex: 1; min-width: 0; }
+  .u .cnt { color: var(--soft); font-size: 12px; white-space: nowrap; }
+  .u .act { display: none; gap: 3px; }
+  .u:hover .act { display: flex; }
+  .u .act button { padding: 0 6px; font-size: 11px; line-height: 18px; }
+  .u.fixed .pos { color: var(--soft); font-family: inherit; }
+  .addrow { padding: 10px 12px; }
+  #types { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+  #tbar { display: flex; gap: 10px; align-items: center; padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  #tbar input[type=search] { width: 260px; }
+  .seg { display: inline-flex; border: 1.5px solid var(--line); border-radius: 999px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; padding: 5px 14px; }
+  .seg button.on { background: #3d070b; color: #fff; }
+  #thead { padding: 10px 16px 0; font-family: Georgia, serif; font-size: 16px; color: var(--maroon-deep); }
+  #tlist { overflow: auto; padding: 8px 16px 20px; flex: 1; }
+  .cat { font-size: 12px; color: var(--soft); margin: 12px 0 4px; }
+  .t { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; margin: 4px 0; }
+  .t.chg { border-left: 4px solid var(--maroon); }
+  .t.ret .nm { color: #a39c9c; text-decoration: line-through; }
+  .t .n { color: var(--soft); width: 40px; flex: none; }
+  .t .nm { flex: 1; min-width: 0; }
+  .t .cnt { color: var(--soft); font-size: 12px; white-space: nowrap; }
+  .t select { padding: 2px 4px; font-size: 12px; max-width: 150px; }
+  .t .eye { padding: 0 8px; font-size: 12px; line-height: 20px; }
+  .t label { font-size: 12px; color: var(--soft); display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .t input[type=checkbox] { accent-color: var(--maroon); }
+  details { margin-top: 14px; } details summary { cursor: pointer; color: var(--soft); font-size: 12.5px; }
+  #examples { border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 12px 14px; }
+  #examples h3 { font-family: Georgia, serif; font-weight: normal; color: var(--maroon-deep); margin: 0 0 8px; font-size: 15px; display: flex; gap: 8px; align-items: flex-start; }
+  #examples h3 span { flex: 1; }
+  #examples .exq { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; font-family: "Times New Roman", Times, serif; font-size: 14px; line-height: 1.35; background: #fff; color: #1a1414; }
+  #examples .exq .src { font: 11px Arial, Helvetica, sans-serif; color: #5b5454; margin-bottom: 4px; }
+  .modal { position: fixed; inset: 0; background: rgba(26,20,20,.45); display: grid; place-items: center; z-index: 50; }
+  .modal[hidden] { display: none; }
+  .dialog { background: var(--panel); border-radius: 14px; width: min(640px, 94vw); max-height: 88vh; overflow: auto; padding: 18px 22px; border: 1px solid var(--line); }
+  .dialog h2 { font-family: Georgia, serif; font-size: 19px; margin: 0 0 10px; color: var(--maroon-deep); font-weight: normal; }
+  .dialog h4 { margin: 12px 0 4px; font-size: 13px; color: var(--soft); font-weight: normal; }
+  .dialog li { margin: 3px 0; }
+  .dialog .actions { display: flex; gap: 10px; margin-top: 16px; align-items: center; }
+  .hrow { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+  .hrow span { flex: 1; }
+  .warn { background: #fdeef0; border: 1px solid #e0b7bb; color: #8b1a1a; padding: 8px 12px; border-radius: 10px; margin: 16px; font-size: 12.5px; }
+  #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #3d070b; color: #fff; padding: 10px 18px; border-radius: 999px; font-size: 13px; z-index: 60; }
+  #toast[hidden] { display: none; }
+  body.dark { --bg: #1c1717; --panel: #262020; --ink: #ece7e7; --soft: #b5abab; --line: #4a4040; --maroon-tint: #3a2226; --tint-line: #5a3238; --maroon-deep: #f0c9ce; --warn: #4a3d12; --warn-ink: #f3dc8f; --warn-line: #7a6622; }
+  body.dark header { background: #3d070b; } body.dark header .badge { background: #2a0508; }
+  body.dark button.primary, body.dark .seg button.on { background: #7a1420; color: #fff; border-color: #7a1420; }
 </style>
 </head>
 <body>
 <header>
-  <div class="badge" title="Home: choose a subject" style="cursor:pointer" onclick="try { localStorage.removeItem('stb.subject'); } catch (e) {} location.href = window.HOME_URL ? window.HOME_URL + '?home=1' : '../index.html';">OP</div>
-  <h1>Unit mapper</h1>
-  <span class="sub">Decide which unit each question archetype belongs to, and the order of the units. The test builder follows this file.</span>
+  <div class="badge" title="Home: choose a subject" onclick="try { localStorage.removeItem('stb.subject'); } catch (e) {} window.open(window.HOME_URL ? window.HOME_URL + '?home=1' : '../index.html?home=1', '_top');">OP</div>
+  <h1 id="h1">Unit order</h1>
+  <span class="chip" id="chg" hidden></span>
   <span class="spacer"></span>
-  <button id="btnImport">Open unit-map.js…</button><input type="file" id="fileImport" accept=".js,.json" hidden>
-  <button id="btnReset">Reset to bank defaults</button>
-  <button id="btnExport" class="primary">Export unit-map.js</button>
+  <button id="btnUndo" class="ghost" disabled title="Undo the last change (Ctrl+Z)">Undo</button>
+  <button id="btnImport" class="ghost" title="Load a unit-map.js file">Open file…</button><input type="file" id="fileImport" accept=".js,.json" hidden>
+  <button id="btnReset" class="ghost" title="Go back to the order built into the question bank">Reset</button>
+  <button id="btnHistory" class="ghost" hidden title="Earlier saved orders">History</button>
+  <button id="btnSave" title="See what changed, then save">Review and save</button>
 </header>
-<div id="tabs"><button data-tab="units" class="on">Units</button><button data-tab="old">Old Regents archetypes</button><button data-tab="new">New Regents archetypes</button></div>
-<main>
-  <div id="left"></div>
-  <div id="right"><h3>Examples</h3><div class="hint">Click an archetype to see two example questions from the bank.</div></div>
+<main id="main">
+  <section id="units">
+    <div class="ph">Units <span class="hint">drag to reorder</span></div>
+    <div id="ulist"></div>
+    <div class="addrow"><button class="small" id="addUnit">+ Add a unit</button></div>
+  </section>
+  <section id="types">
+    <div id="tbar">
+      <input type="search" id="search" placeholder="Search question types">
+      <span class="seg"><button data-k="old" class="on">Old Regents</button><button data-k="new">New Regents</button></span>
+      <label class="hint" style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="chgOnly"> Changed only</label>
+      <span class="hint" style="margin-left:auto">Drag a type onto a unit, or use its unit list. Retired types are hidden in the test builder.</span>
+    </div>
+    <div id="thead"></div>
+    <div id="tlist"></div>
+  </section>
+  <aside id="examples" hidden></aside>
 </main>
+<div id="review" class="modal" hidden><div class="dialog"><h2>Review your changes</h2><div id="reviewBody"></div>
+  <div class="actions"><span class="hint" id="reviewNote" style="flex:1"></span><button id="reviewCancel">Cancel</button><button id="reviewSave" class="primary">Save</button></div></div></div>
+<div id="history" class="modal" hidden><div class="dialog"><h2>Earlier saved orders</h2><div class="hint">Restoring one loads it here as unsaved changes. Nothing reaches the department until you review and save.</div>
+  <div id="historyBody" style="margin-top:8px"></div><div class="actions"><span style="flex:1"></span><button id="historyClose">Close</button></div></div></div>
+<div id="toast" hidden></div>
+<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="../lib/mockbackend.js"><\/script>');   // local testing of the signed-in behaviour</script>
 <script src="bank/bank.js"></script>
 <script src="bank-new/new.js" onerror="window.BANK_NEW = null"></script>
 <script src="bank/unit-map.js" onerror="window.UNIT_MAP = null"></script>
@@ -76,172 +127,200 @@
   const B = window.BANK, BN = window.BANK_NEW || { clusters: [], types: {}, unit_order: [] };
   const SHARED = !!(window.google && google.script && google.script.run);
   const call = (fn, ...args) => new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(e => rej(new Error(e.message || String(e)))).rpc(fn, args, window.SUBJECT_ID || (window.BANK && window.BANK.subject) || 'chemistry'));
-  if (!B) { $('left').innerHTML = '<div class="warn">bank/bank.js not found. Keep this page in the Chem Test Builder folder.</div>'; return; }
-  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  if (!B) { $('main').innerHTML = '<div class="warn">bank/bank.js was not found next to this page.</div>'; return; }
+  try { if ((JSON.parse(localStorage.getItem('stb.prefs') || '{}') || {}).dark) document.body.classList.add('dark'); } catch (e) { }
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const clone = o => JSON.parse(JSON.stringify(o));
+  const short = email => String(email || '').split('@')[0];
+  const SUBJ = { chemistry: 'Chemistry', physics: 'Physics', earth: 'Earth Science', biology: 'Biology' }[B.subject] || 'Chemistry';
+  $('h1').textContent = SUBJ + ' · unit order'; document.title = SUBJ + ' Unit Order';
+  const TYPES = { old: B.types || {}, new: BN.types || {} }, PRE = { old: 'T', new: 'N' };
 
-  // ---------- defaults from the banks
-  const defaultUnits = () => {
-    const order = BN.unit_order && BN.unit_order.length ? BN.unit_order : Object.keys(B.units).map(Number).sort((a, b) => a - b);
-    return order.map(id => ({ id: Number(id), name: B.units[id] }));
-  };
-  const defaults = () => ({
-    units: defaultUnits(),
-    old: Object.fromEntries(Object.entries(B.types).map(([t, v]) => [t, v.unit == null ? null : v.unit])),
-    new: Object.fromEntries(Object.entries(BN.types || {}).map(([t, v]) => [t, v.unit == null ? null : v.unit])),
-  });
+  // ---------- the map: baseline = what is saved now (the department's map, the unit-map.js file, or the bank's own order); M = the working copy
+  const defaultUnits = () => { const order = BN.unit_order && BN.unit_order.length ? BN.unit_order : Object.keys(B.units).map(Number).sort((a, b) => a - b); return order.map(id => ({ id: Number(id), name: B.units[id] })); };
+  const defaults = () => ({ units: defaultUnits(),
+    old: Object.fromEntries(Object.entries(TYPES.old).map(([t, v]) => [t, v.unit == null ? null : v.unit])),
+    new: Object.fromEntries(Object.entries(TYPES.new).map(([t, v]) => [t, v.unit == null ? null : v.unit])), retired: [] });
   const BASE = defaults();
-  let M;                      // the working map
-  const load = () => {
-    try { const saved = JSON.parse(localStorage.getItem(UMKEY) || 'null'); if (saved && saved.units) return saved; } catch (e) { }
-    if (window.UNIT_MAP && window.UNIT_MAP.units) return JSON.parse(JSON.stringify(window.UNIT_MAP));
-    return defaults();
-  };
-  M = load();
+  const normalize = m => { m.old = m.old || {}; m.new = m.new || {}; m.retired = (m.retired || []).map(Number);
+    Object.keys(BASE.old).forEach(t => { if (!(t in m.old)) m.old[t] = BASE.old[t]; }); Object.keys(BASE.new).forEach(t => { if (!(t in m.new)) m.new[t] = BASE.new[t]; }); return m; };
+  const UMKEY = ((window.BANK && window.BANK.subject) || 'ctb') + '.unitmap';   // per-subject working copy in this browser (the test builder reads it too)
+  let baseline = normalize(window.UNIT_MAP && window.UNIT_MAP.units ? clone(window.UNIT_MAP) : defaults()), loadedStamp = '', me = '';
+  let M = null;
   if (SHARED) {
-    try { const um = await call('getUnitMap'); if (um && um.units) { M = um; localStorage.removeItem(UMKEY); } } catch (e) { alert('Could not read the shared unit map: ' + e.message); }
-    $('btnExport').textContent = 'Save for everyone';
-    document.querySelector('header .sub').textContent = 'Changes apply to every teacher\u2019s test builder when you click Save for everyone.';
+    try { const um = await call('getUnitMap'); if (um && um.units) baseline = normalize(um); const info = await call('unitMapInfo'); loadedStamp = info.saved || ''; me = info.me || ''; }
+    catch (e) { alert('Could not read the shared unit order: ' + e.message); }
+    try { localStorage.removeItem(UMKEY); } catch (e) { }
+    $('btnHistory').hidden = false; $('btnImport').hidden = true; $('btnReset').hidden = true;
+  } else {
+    try { const saved = JSON.parse(localStorage.getItem(UMKEY) || 'null'); if (saved && saved.units) M = normalize(saved); } catch (e) { }
   }
-  // make sure every archetype has an entry
-  Object.keys(BASE.old).forEach(t => { if (!(t in M.old)) M.old[t] = BASE.old[t]; });
-  M.new = M.new || {}; Object.keys(BASE.new).forEach(t => { if (!(t in M.new)) M.new[t] = BASE.new[t]; });
-  const save = () => { try { localStorage.setItem(UMKEY, JSON.stringify(M)); } catch (e) { } status(); };
-  const UMKEY = ((window.BANK && window.BANK.subject) || 'ctb') + '.unitmap';   // per-subject browser copy of the map
-  const uName = id => { const u = M.units.find(x => x.id === Number(id)); return u ? u.name : '?'; };
-  const CODES = (window.BANK && window.BANK.unit_codes) || null;            // physics: unit id -> course code (U0, U2.5 …)
+  if (!M) M = clone(baseline);
+
+  // ---------- small helpers
+  const CODES = (window.BANK && window.BANK.unit_codes) || null;            // some subjects keep fixed course codes (U0, U2.5 …)
   const uPos = id => CODES ? (CODES[id] != null ? CODES[id] : id) : M.units.findIndex(x => x.id === Number(id)) + 1;
-  const uLabel = id => id == null ? '— no unit' : id === 'misc' ? 'Misc / other' : `Unit ${uPos(id)}: ${uName(id)}`;
+  const uName = (id, m) => { const u = (m || M).units.find(x => x.id === Number(id)); return u ? u.name : '?'; };
+  const uKey = u => u == null ? 'none' : String(u);
+  const uShort = (u, m) => u == null ? 'no unit' : u === 'misc' ? 'Misc' : 'U' + (CODES ? (CODES[u] != null ? CODES[u] : u) : ((m || M).units.findIndex(x => x.id === Number(u)) + 1));
+  const uFull = (u, m) => u == null ? 'No unit' : u === 'misc' ? 'Misc / other' : `Unit ${uShort(u, m).slice(1)}: ${uName(u, m)}`;
+  const count = { old: {}, new: {} };
+  B.questions.forEach(q => (q.types || []).forEach(t => { count.old[t] = (count.old[t] || 0) + 1; }));
+  (B.clusters || []).forEach(c => c.items.forEach(it => (it.types || []).forEach(t => { count.old[t] = (count.old[t] || 0) + 1; })));
+  BN.clusters.forEach(c => c.questions.forEach(q => (q.types || []).forEach(t => { count.new[t] = (count.new[t] || 0) + 1; })));
+  const isRet = (t, m) => (m || M).retired.includes(Number(t));
+  const typeChanged = (k, t) => uKey(M[k][t]) !== uKey(baseline[k][t]) || (k === 'old' && isRet(t) !== isRet(t, baseline));
+  const toast = msg => { $('toast').textContent = msg; $('toast').hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { $('toast').hidden = true; }, 2600); };
 
-  // ---------- counts
-  const oldCount = {}; B.questions.forEach(q => { (q.types || []).forEach(t => { oldCount[t] = (oldCount[t] || 0) + 1; }); });
-  (B.clusters || []).forEach(c => c.items.forEach(it => (it.types || []).forEach(t => { oldCount[t] = (oldCount[t] || 0) + 1; })));
-  const newCount = {}; BN.clusters.forEach(c => c.questions.forEach(q => (q.types || []).forEach(t => { newCount[t] = (newCount[t] || 0) + 1; })));
-  const unitCount = id => {
-    const o = Object.entries(M.old).filter(([t, u]) => Number(u) === Number(id)).reduce((s, [t]) => s + (oldCount[t] || 0), 0);
-    const n = Object.entries(M.new).filter(([t, u]) => Number(u) === Number(id)).reduce((s, [t]) => s + (newCount[t] || 0), 0);
-    return `${Object.values(M.old).filter(u => Number(u) === Number(id)).length + Object.values(M.new).filter(u => Number(u) === Number(id)).length} archetypes · ${o + n} questions`;
-  };
+  // ---------- changes: every edit goes through change(), which keeps the undo stack and the working copy
+  const undoStack = [];
+  const warnShared = () => { if (!SHARED) return; try { if (sessionStorage.getItem('umWarned')) return; sessionStorage.setItem('umWarned', '1'); } catch (e) { }
+    alert('Heads up: this unit order is shared by the whole department.\n\nYour changes reach every teacher’s test builder once you review and save them. You will not be reminded again this session.'); };
+  const persist = () => { try { localStorage.setItem(UMKEY, JSON.stringify(M)); } catch (e) { } };
+  function change(fn) { warnShared(); undoStack.push(JSON.stringify(M)); if (undoStack.length > 80) undoStack.shift(); fn(); persist(); render(); }
+  function undo() { if (!undoStack.length) return; M = JSON.parse(undoStack.pop()); persist(); render(); }
+  $('btnUndo').onclick = undo;
+  document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) { e.preventDefault(); undo(); } });
 
-  // ---------- images: same lazy data files as the test builder
-  const IMGS = {}, loading = {};
-  const b64bytes = b64 => { const bin = atob(b64); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; };
-  const examOf = path => { const m = String(path).match(/^img(?:-b)?\/(PSC-[^_]+)_/); return m ? m[1] : (String(path).match(/(\d{4}-\d{2})_/) || [])[1]; };
-  function ensureExam(exam) {
-    if (!loading[exam]) loading[exam] = new Promise((res, rej) => {
-      const s = document.createElement('script'); s.src = (window.SITE_BASE || '') + (exam.startsWith('PSC-') ? `bank-new/data/${exam}.js` : `bank/data/${exam}.js`);
-      s.onload = () => { const d = (window.BANKIMG || {})[exam] || {}; for (const p in d) IMGS[p] = { b64: d[p] }; delete window.BANKIMG[exam]; res(); };
-      s.onerror = () => rej(new Error('missing data file for ' + exam)); document.head.appendChild(s);
-    });
-    return loading[exam];
+  /** what differs between the saved order and the working copy */
+  function diff() {
+    const out = { units: [], moved: [], retired: [] }, bu = baseline.units, mu = M.units;
+    mu.filter(u => !bu.some(x => x.id === u.id)).forEach(u => out.units.push(`Added the unit "${u.name}"`));
+    bu.filter(u => !mu.some(x => x.id === u.id)).forEach(u => out.units.push(`Removed the unit "${u.name}"`));
+    mu.forEach(u => { const b = bu.find(x => x.id === u.id); if (b && b.name !== u.name) out.units.push(`Renamed "${b.name}" to "${u.name}"`); });
+    const common = ids => ids.filter(id => bu.some(x => x.id === id) && mu.some(x => x.id === id)).join(',');
+    if (common(bu.map(u => u.id)) !== common(mu.map(u => u.id))) out.units.push('Unit order is now: ' + mu.map(u => u.name).join(', '));
+    ['old', 'new'].forEach(k => Object.keys(TYPES[k]).map(Number).sort((a, b) => a - b).forEach(t => {
+      if (uKey(M[k][t]) !== uKey(baseline[k][t])) out.moved.push(`${PRE[k]}${t} ${TYPES[k][t].name}: ${uFull(baseline[k][t], baseline)} → ${uFull(M[k][t])}`); }));
+    Object.keys(TYPES.old).map(Number).forEach(t => { if (isRet(t) !== isRet(t, baseline)) out.retired.push(`${isRet(t) ? 'Retired' : 'Brought back'}: T${t} ${TYPES.old[t].name}`); });
+    out.n = out.units.length + out.moved.length + out.retired.length; return out;
   }
-  function urlOf(path) { const e = IMGS[path]; if (!e) return ''; if (!e.url) e.url = URL.createObjectURL(new Blob([b64bytes(e.b64)], { type: 'image/png' })); return e.url; }
 
-  // ---------- tabs
-  let tab = 'units', selected = null;
-  document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => { tab = b.dataset.tab; document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b)); render(); });
-
-  function unitOptions(cur, allowNone) {
-    let h = M.units.map(u => `<option value="${u.id}" ${Number(cur) === u.id ? 'selected' : ''}>Unit ${uPos(u.id)}: ${esc(u.name)}</option>`).join('');
-    h += `<option value="misc" ${cur === 'misc' ? 'selected' : ''}>Misc / other</option>`;
-    if (allowNone) h += `<option value="" ${cur == null ? 'selected' : ''}>— no unit (engineering / evaluation)</option>`;
-    return h;
-  }
+  // ---------- state of the screen
+  let kind = 'old', selU = uKey((M.units[0] || {}).id), exOpen = null, dragging = null;
+  const inUnit = (k, u) => Object.keys(TYPES[k]).map(Number).filter(t => uKey(M[k][t]) === u);
 
   function renderUnits() {
-    let h = `<div id="toolbar"><button class="small" id="addUnit">Add a unit</button><span class="hint">Drag is not needed: use ▲ ▼ to reorder. The number shown in the test builder is the unit's position in this list. Names can be edited in place.</span></div><ul class="units">`;
-    M.units.forEach((u, i) => {
-      h += `<li data-id="${u.id}"><span class="pos">Unit ${uPos(u.id)}</span><input type="text" value="${esc(u.name)}" data-name="${u.id}"><span class="cnt">${unitCount(u.id)}</span>
-        <button class="small" data-mv="-1" ${i === 0 ? 'disabled' : ''}>&#9650;</button><button class="small" data-mv="1" ${i === M.units.length - 1 ? 'disabled' : ''}>&#9660;</button><button class="small" data-rm="${u.id}" title="Remove this unit">&#10005;</button></li>`;
+    const rows = M.units.map(u => ({ key: String(u.id), pos: 'U' + uPos(u.id), name: u.name, real: true }));
+    rows.push({ key: 'misc', pos: '', name: 'Misc / other' });
+    if (kind === 'new' || inUnit(kind, 'none').length) rows.push({ key: 'none', pos: '', name: 'No unit (engineering, evaluation)' });
+    if (!rows.some(r => r.key === selU)) selU = rows[0].key;
+    $('ulist').innerHTML = rows.map(r => `<div class="u${r.key === selU ? ' sel' : ''}${r.real ? '' : ' fixed'}" data-u="${r.key}"${r.real ? ' draggable="true"' : ''}>` +
+      (r.real ? '<span class="h">⋮⋮</span>' : '<span class="h" style="visibility:hidden">⋮⋮</span>') + `<span class="pos">${esc(r.pos)}</span><span class="nm">${esc(r.name)}</span>` +
+      `<span class="cnt">${inUnit(kind, r.key).length} types</span>` + (r.real ? `<span class="act"><button data-ren="${r.key}" title="Rename">✎</button><button data-rm="${r.key}" title="Remove this unit">✕</button></span>` : '') + `</div>`).join('');
+    $('ulist').querySelectorAll('.u').forEach(el => {
+      const key = el.dataset.u;
+      el.onclick = e => { if (e.target.closest('button')) return; selU = key; $('search').value = ''; $('chgOnly').checked = false; render(); };
+      el.ondragstart = e => { dragging = { unit: Number(key) }; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', 'unit'); } catch (x) { } };
+      el.ondragover = e => { if (!dragging || (dragging.unit != null && !/^\d+$/.test(key))) return; e.preventDefault(); el.classList.add('over'); };
+      el.ondragleave = () => el.classList.remove('over');
+      el.ondrop = e => { e.preventDefault(); el.classList.remove('over'); const d = dragging; dragging = null; if (!d) return;
+        if (d.type != null) { const to = key === 'none' ? null : key === 'misc' ? 'misc' : Number(key); if (uKey(M[d.kind][d.type]) !== uKey(to)) change(() => { M[d.kind][d.type] = to; }); }
+        else if (d.unit != null && d.unit !== Number(key)) change(() => { const from = M.units.findIndex(u => u.id === d.unit), to = M.units.findIndex(u => u.id === Number(key)); const [x] = M.units.splice(from, 1); M.units.splice(to, 0, x); }); };
     });
-    h += `</ul>`;
-    $('left').innerHTML = h;
-    $('addUnit').onclick = () => { const name = prompt('Name of the new unit:'); if (!name) return; const id = Math.max(0, ...M.units.map(u => u.id), ...Object.keys(B.units).map(Number)) + 1; M.units.push({ id, name: name.trim() }); save(); render(); };
-    $('left').querySelectorAll('input[data-name]').forEach(inp => inp.onchange = () => { const u = M.units.find(x => x.id === Number(inp.dataset.name)); u.name = inp.value.trim() || u.name; save(); render(); });
-    $('left').querySelectorAll('button[data-mv]').forEach(b => b.onclick = () => { const li = b.closest('li'); const i = M.units.findIndex(x => x.id === Number(li.dataset.id)); const j = i + Number(b.dataset.mv); [M.units[i], M.units[j]] = [M.units[j], M.units[i]]; save(); render(); });
-    $('left').querySelectorAll('button[data-rm]').forEach(b => b.onclick = () => {
-      const id = Number(b.dataset.rm); const used = Object.entries(M.old).filter(([t, u]) => Number(u) === id).length + Object.entries(M.new).filter(([t, u]) => Number(u) === id).length;
-      if (M.units.length === 1) return;
-      let target = null;
-      if (used) {
-        const others = M.units.filter(u => u.id !== id);
-        const ans = prompt(`${used} archetype(s) are attached to "${uName(id)}". Move them to which unit? Type its position number (1–${M.units.length}, skipping this one), or "misc":\n` + others.map(u => `${uPos(u.id)} = ${u.name}`).join('\n'));
-        if (ans == null) return;
-        if (ans.trim().toLowerCase() === 'misc') target = 'misc';
-        else { const pos = Number(ans); const u = M.units[pos - 1]; if (!u || u.id === id) { alert('No such unit.'); return; } target = u.id; }
-      } else if (!confirm(`Remove "${uName(id)}"?`)) return;
-      Object.keys(M.old).forEach(t => { if (Number(M.old[t]) === id) M.old[t] = target; });
-      Object.keys(M.new).forEach(t => { if (Number(M.new[t]) === id) M.new[t] = target; });
-      M.units = M.units.filter(u => u.id !== id); save(); render();
-    });
-    $('right').innerHTML = `<h3>How this works</h3><div class="hint" style="line-height:1.5">Reorder or rename units here, then assign archetypes on the other two tabs. <b>Export unit-map.js</b> downloads one small file: drop it into the test builder's <code>bank</code> folder and every copy of the builder picks it up on the next open, and send the same file to Quinn so the master lists are updated too. Your work is also remembered in this browser until you reset it.</div>`;
+    $('ulist').querySelectorAll('button[data-ren]').forEach(b => { b.onclick = () => { const u = M.units.find(x => x.id === Number(b.dataset.ren)); const name = prompt('Unit name:', u.name); if (name && name.trim() && name.trim() !== u.name) change(() => { u.name = name.trim(); }); }; });
+    $('ulist').querySelectorAll('button[data-rm]').forEach(b => { b.onclick = () => { const id = Number(b.dataset.rm), n = inUnit('old', String(id)).length + inUnit('new', String(id)).length;
+      if (n) { alert(`"${uName(id)}" still holds ${n} question type${n === 1 ? '' : 's'}. Move them to another unit first.`); return; }
+      if (M.units.length > 1 && confirm(`Remove the unit "${uName(id)}"?`)) change(() => { M.units = M.units.filter(u => u.id !== id); }); }; });
   }
 
-  function renderTypes(kind) {
-    const types = kind === 'old' ? B.types : (BN.types || {});
-    const map = kind === 'old' ? M.old : M.new, base = kind === 'old' ? BASE.old : BASE.new, counts = kind === 'old' ? oldCount : newCount;
-    const prefix = kind === 'old' ? 'T' : 'N';
-    const cats = {};
-    Object.keys(types).map(Number).sort((a, b) => a - b).forEach(t => { const c = types[t].category || 'Other'; (cats[c] = cats[c] || []).push(t); });
-    let h = `<div id="toolbar"><input type="search" id="search" placeholder="Search archetypes" style="width:280px"><span class="hint">Change the unit in the dropdown. A maroon bar marks rows that differ from the bank's current mapping. Click a row for examples.</span></div>`;
-    h += `<table><tr><th>#</th><th>Archetype</th><th style="text-align:right">Qs</th><th style="width:300px">Unit</th>${kind === 'old' ? '<th title="A retired question type is hidden in the test builder (old Regents questions only)">Retire</th>' : ''}</tr>`;
-    Object.keys(cats).sort().forEach(cat => {
-      h += `<tr class="cat"><td colspan="5">${esc(cat)}</td></tr>`;
-      cats[cat].forEach(t => {
-        const changed = String(map[t] ?? '') !== String(base[t] ?? '');
-        const ret = kind === 'old' && (M.retired || []).includes(t);
-        h += `<tr class="row ${changed ? 'changed' : ''} ${ret ? 'retired' : ''} ${selected === kind + t ? 'sel' : ''}" data-t="${t}"><td class="n">${prefix}${t}</td><td>${esc(types[t].name)}</td><td class="cnt">${counts[t] || 0}</td><td class="u"><select data-t="${t}">${unitOptions(map[t], kind === 'new' || map[t] == null)}</select></td>${kind === 'old' ? `<td class="ret" style="text-align:center"><input type="checkbox" data-ret="${t}" ${ret ? 'checked' : ''} title="Retire: hide this question type in the test builder"></td>` : ''}</tr>`;
-      });
-    });
-    h += `</table>`;
-    $('left').innerHTML = h;
-    $('search').oninput = () => { const s = $('search').value.toLowerCase(); $('left').querySelectorAll('tr.row').forEach(tr => { tr.style.display = !s || tr.innerText.toLowerCase().includes(s) ? '' : 'none'; }); };
-    $('left').querySelectorAll('select[data-t]').forEach(sel => { sel.onchange = e => { e.stopPropagation(); const v = sel.value; map[sel.dataset.t] = v === '' ? null : v === 'misc' ? 'misc' : Number(v); save(); renderTypes(kind); }; sel.onclick = e => e.stopPropagation(); });
-    $('left').querySelectorAll('input[data-ret]').forEach(cb => { cb.onclick = e => e.stopPropagation();
-      cb.onchange = () => { const t = Number(cb.dataset.ret); M.retired = (M.retired || []).filter(x => x !== t); if (cb.checked) M.retired.push(t); save(); renderTypes(kind); }; });
-    $('left').querySelectorAll('tr.row').forEach(tr => tr.onclick = () => { selected = kind + tr.dataset.t; $('left').querySelectorAll('tr.row').forEach(x => x.classList.toggle('sel', x === tr)); showExamples(kind, Number(tr.dataset.t)); });
+  function unitSelect(k, t) {
+    const cur = uKey(M[k][t]);
+    return `<select data-move="${t}" title="Move to another unit">` + M.units.map(u => `<option value="${u.id}"${cur === String(u.id) ? ' selected' : ''}>U${uPos(u.id)} ${esc(u.name)}</option>`).join('') +
+      `<option value="misc"${cur === 'misc' ? ' selected' : ''}>Misc / other</option>` + (k === 'new' || cur === 'none' ? `<option value="none"${cur === 'none' ? ' selected' : ''}>No unit</option>` : '') + `</select>`;
+  }
+  function typeRow(k, t, showUnit) {
+    const ty = TYPES[k][t], moved = uKey(M[k][t]) !== uKey(baseline[k][t]), ret = k === 'old' && isRet(t), retChg = k === 'old' && ret !== isRet(t, baseline);
+    return `<div class="t${moved || retChg ? ' chg' : ''}${ret ? ' ret' : ''}" draggable="true" data-t="${t}"><span class="h">⋮⋮</span><span class="n">${PRE[k]}${t}</span><span class="nm">${esc(ty.name)}</span>` +
+      (moved ? `<span class="chip">moved from ${esc(uShort(baseline[k][t], baseline))}</span>` : '') + (retChg ? `<span class="chip">${ret ? 'newly retired' : 'brought back'}</span>` : '') +
+      `<span class="cnt">${count[k][t] || 0} question${(count[k][t] || 0) === 1 ? '' : 's'}</span>${unitSelect(k, t)}<button class="eye" data-ex="${t}" title="Show example questions of this type">Examples</button>` +
+      (k === 'old' ? `<label title="A retired type is hidden in the test builder"><input type="checkbox" data-ret="${t}"${ret ? ' checked' : ''}> Retire</label>` : '') + `</div>`;
+  }
+  function renderTypes() {
+    const s = $('search').value.trim().toLowerCase(), chg = $('chgOnly').checked, everywhere = !!s || chg;
+    let ids = Object.keys(TYPES[kind]).map(Number).sort((a, b) => a - b);
+    ids = everywhere ? ids.filter(t => (!s || (PRE[kind] + t + ' ' + TYPES[kind][t].name).toLowerCase().includes(s)) && (!chg || typeChanged(kind, t))) : ids.filter(t => uKey(M[kind][t]) === selU);
+    $('thead').textContent = everywhere ? `${ids.length} ${chg ? 'changed ' : ''}type${ids.length === 1 ? '' : 's'}${s ? ' matching "' + $('search').value.trim() + '"' : ''}, in every unit`
+      : (selU === 'misc' ? 'Misc / other' : selU === 'none' ? 'No unit' : uFull(Number(selU))) + ` · ${ids.length} type${ids.length === 1 ? '' : 's'}`;
+    const live = everywhere || kind === 'new' ? ids : ids.filter(t => !isRet(t)), gone = everywhere || kind === 'new' ? [] : ids.filter(t => isRet(t));
+    const block = list => { let h = '', cat = null; list.forEach(t => { const c = TYPES[kind][t].category || 'Other'; if (c !== cat) { cat = c; h += `<div class="cat">${esc(c)}</div>`; } h += typeRow(kind, t, everywhere); }); return h; };
+    $('tlist').innerHTML = (live.length ? block(live) : `<div class="hint" style="padding:16px 0">${everywhere ? 'Nothing matches.' : 'No question types in this unit. Drag one here from another unit, or use a type’s unit list.'}</div>`) +
+      (gone.length ? `<details${gone.some(t => typeChanged('old', t)) ? ' open' : ''}><summary>Retired in this unit: ${gone.length}</summary>${block(gone)}</details>` : '');
+    $('tlist').querySelectorAll('.t').forEach(el => { const t = Number(el.dataset.t);
+      el.ondragstart = e => { dragging = { type: t, kind }; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', 'type'); } catch (x) { } }; });
+    $('tlist').querySelectorAll('select[data-move]').forEach(sel => { sel.onchange = () => { const t = Number(sel.dataset.move), v = sel.value; change(() => { M[kind][t] = v === 'none' ? null : v === 'misc' ? 'misc' : Number(v); }); }; });
+    $('tlist').querySelectorAll('input[data-ret]').forEach(cb => { cb.onchange = () => { const t = Number(cb.dataset.ret); change(() => { M.retired = M.retired.filter(x => x !== t); if (cb.checked) M.retired.push(t); }); }; });
+    $('tlist').querySelectorAll('button[data-ex]').forEach(b => { b.onclick = () => showExamples(kind, Number(b.dataset.ex)); });
   }
 
-  async function showExamples(kind, t) {
-    const types = kind === 'old' ? B.types : BN.types;
-    const R = $('right');
-    R.innerHTML = `<h3>${kind === 'old' ? 'T' : 'N'}${t}. ${esc(types[t].name)}</h3><div class="hint">Loading examples…</div>`;
-    const exs = [];
-    if (kind === 'old') {
-      const mc = B.questions.filter(q => q.type === t).sort((a, b) => (a.has_figure - b.has_figure) || (a.h_in - b.h_in));
+  // ---------- examples: a few real questions of the type, as text
+  function showExamples(k, t) {
+    const exs = [], clean = x => String(x || '').replace(/\s+/g, ' ').trim();
+    if (k === 'old') {
       const seen = new Set();
-      for (const q of mc) { if (seen.has(q.exam)) continue; seen.add(q.exam); exs.push({ src: `${q.session} ${q.year} Q${q.q} (multiple choice)`, img: q.img }); if (exs.length === 2) break; }
-      if (exs.length < 2) for (const c of (B.clusters || [])) for (const it of c.items) { if (it.type === t && exs.length < 2 && !seen.has(c.exam + it.q)) { seen.add(c.exam + it.q); exs.push({ src: `${c.session} ${c.year} Q${it.q} (constructed response)`, img: it.stem.img }); } }
+      B.questions.filter(q => q.type === t).sort((a, b) => a.exam < b.exam ? 1 : -1).forEach(q => { if (exs.length < 3 && !seen.has(q.exam)) { seen.add(q.exam); exs.push({ src: `${q.session} ${q.year} Q${q.q} · multiple choice${q.has_figure ? ' · has a figure' : ''}`, text: clean(q.text) || q.descriptor }); } });
+      (B.clusters || []).forEach(c => c.items.forEach(it => { if (it.type === t && exs.length < 4) exs.push({ src: `${c.session} ${c.year} Q${it.q} · constructed response`, text: clean(it.text || (it.stem && it.stem.text)) || it.descriptor }); }));
     } else {
-      const seen = new Set();
-      for (const c of BN.clusters) for (const qq of c.questions) {
-        if (qq.type !== t || exs.length >= 2 || seen.has(c.exam)) continue;
-        const bl = c.blocks.find(b => b.kind === 'q' && b.q === qq.q); if (!bl) continue;
-        seen.add(c.exam); exs.push({ src: `${c.sample ? 'Sample 2025' : c.session + ' ' + c.year} · "${c.title}" Q${qq.q} (${qq.mc ? 'multiple choice' : 'constructed response'})`, img: bl.img });
-      }
+      BN.clusters.forEach(c => c.questions.forEach(q => { if (q.type === t && exs.length < 4) exs.push({ src: `${c.sample ? 'Sample 2025' : c.session + ' ' + c.year} · ${c.title || ''} Q${q.q} · ${q.mc ? 'multiple choice' : 'constructed response'}`, text: clean(q.text) || q.descriptor }); }));
     }
-    if (!exs.length) { R.innerHTML += '<div class="hint">No question in the bank uses this archetype yet.</div>'; return; }
-    try { await Promise.all([...new Set(exs.map(e => examOf(e.img)))].map(ensureExam)); } catch (e) { R.innerHTML += `<div class="warn">${esc(e.message)}</div>`; return; }
-    R.innerHTML = `<h3>${kind === 'old' ? 'T' : 'N'}${t}. ${esc(types[t].name)}</h3>` + exs.map(e => `<div class="ex"><div class="src">${esc(e.src)}</div><img src="${urlOf(e.img)}" alt=""></div>`).join('');
+    exOpen = k + t; $('main').classList.add('ex'); $('examples').hidden = false;
+    $('examples').innerHTML = `<h3><span>${PRE[k]}${t}. ${esc(TYPES[k][t].name)}</span><button class="small" id="exClose">Close</button></h3>` +
+      (exs.length ? exs.map(e => `<div class="exq"><div class="src">${esc(e.src)}</div>${esc(e.text)}</div>`).join('') : '<div class="hint">No question in the bank uses this type yet.</div>') +
+      '<div class="hint">Text only. Figures are not shown here.</div>';
+    $('exClose').onclick = () => { exOpen = null; $('main').classList.remove('ex'); $('examples').hidden = true; };
   }
 
-  function render() { if (tab === 'units') renderUnits(); else renderTypes(tab); status(); }
-  function status() {
-    const changed = M.units.map(u => u.id).join(',') !== BASE.units.map(u => u.id).join(',') || M.units.some(u => (BASE.units.find(x => x.id === u.id) || {}).name !== u.name) ||
-      Object.keys(M.old).some(t => String(M.old[t] ?? '') !== String(BASE.old[t] ?? '')) || Object.keys(M.new).some(t => String(M.new[t] ?? '') !== String(BASE.new[t] ?? '')) || (M.retired || []).length > 0;
-    document.querySelector('header .sub').textContent = changed ? 'Unsaved differences from the bank — export unit-map.js when you are done.' : 'Matches the bank’s current mapping.';
+  function render() {
+    renderUnits(); renderTypes();
+    const n = diff().n; $('chg').hidden = !n; $('chg').textContent = `${n} change${n === 1 ? '' : 's'}`; $('btnUndo').disabled = !undoStack.length;
   }
-  $('btnExport').onclick = async () => {
-    const out = { version: 1, updated: new Date().toISOString().slice(0, 10), units: M.units, old: M.old, new: M.new, retired: M.retired || [] };
-    if (SHARED) { try { await call('saveUnitMap', out); alert('Saved. Every test builder picks this up the next time it opens.'); } catch (e) { alert('Could not save: ' + e.message); } return; }
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['window.UNIT_MAP = ' + JSON.stringify(out, null, 1) + ';\n'], { type: 'text/javascript' })); a.download = 'unit-map.js'; a.click();
+  document.addEventListener('dragend', () => { dragging = null; document.querySelectorAll('.u.over').forEach(x => x.classList.remove('over')); });
+  $('search').oninput = renderTypes; $('chgOnly').onchange = renderTypes;
+  document.querySelectorAll('.seg button').forEach(b => { b.onclick = () => { kind = b.dataset.k; document.querySelectorAll('.seg button').forEach(x => x.classList.toggle('on', x === b)); render(); }; });
+  $('addUnit').onclick = () => { const name = prompt('Name of the new unit:'); if (!name || !name.trim()) return; const id = Math.max(0, ...M.units.map(u => u.id), ...Object.keys(B.units).map(Number)) + 1; change(() => { M.units.push({ id, name: name.trim() }); }); selU = String(id); render(); };
+
+  // ---------- review and save
+  const outMap = () => ({ version: 1, updated: new Date().toISOString().slice(0, 10), units: M.units, old: M.old, new: M.new, retired: M.retired });
+  $('btnSave').onclick = () => {
+    const d = diff(), list = (title, a) => a.length ? `<h4>${title}</h4><ul>${a.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
+    $('reviewBody').innerHTML = d.n ? list('Units', d.units) + list(`Question types moved (${d.moved.length})`, d.moved) + list('Retired types', d.retired) : '<div class="hint">Nothing has changed since the last save.</div>';
+    $('reviewSave').textContent = SHARED ? 'Save for everyone' : 'Export unit-map.js'; $('reviewSave').disabled = SHARED && !d.n;
+    $('reviewNote').textContent = SHARED ? 'Every teacher’s test builder follows the saved order the next time it opens.' : 'The file goes in the test builder’s bank folder. This browser already uses your changes.';
+    $('review').hidden = false;
   };
+  $('reviewCancel').onclick = () => { $('review').hidden = true; };
+  $('reviewSave').onclick = async () => {
+    if (!SHARED) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['window.UNIT_MAP = ' + JSON.stringify(outMap(), null, 1) + ';\n'], { type: 'text/javascript' })); a.download = 'unit-map.js'; a.click(); $('review').hidden = true; return; }
+    try {
+      const info = await call('unitMapInfo');
+      if (info.saved && info.saved !== loadedStamp && !confirm(`${short(info.by) || 'Someone'} saved a different order on ${new Date(info.saved).toLocaleString()}.\n\nSaving now replaces it with yours. Continue?`)) return;
+      await call('saveUnitMap', outMap());
+      const after = await call('unitMapInfo'); loadedStamp = after.saved || '';
+      baseline = normalize(clone(M)); undoStack.length = 0; try { localStorage.removeItem(UMKEY); } catch (e) { }
+      $('review').hidden = true; render(); toast('Saved. Every test builder picks this up the next time it opens.');
+    } catch (e) { alert('Could not save: ' + e.message); }
+  };
+
+  // ---------- history (signed-in copy)
+  $('btnHistory').onclick = async () => {
+    $('historyBody').innerHTML = '<div class="hint">Loading…</div>'; $('history').hidden = false;
+    try {
+      const rows = await call('listUnitMaps');
+      $('historyBody').innerHTML = rows.length ? rows.map((r, i) => `<div class="hrow"><span>${esc(new Date(r.saved).toLocaleString())} · ${esc(short(r.by))}${i === 0 ? ' · current' : ''}</span><button class="small" data-at="${esc(r.saved)}">Restore</button></div>`).join('') : '<div class="hint">No order has been saved yet. The builder is using the order built into the question bank.</div>';
+      $('historyBody').querySelectorAll('button[data-at]').forEach(b => { b.onclick = async () => { try { const m = await call('getUnitMapAt', b.dataset.at); if (!m || !m.units) throw new Error('That version could not be read.'); change(() => { M = normalize(m); }); $('history').hidden = true; toast('Restored as unsaved changes. Review and save to apply.'); } catch (e) { alert(e.message); } }; });
+    } catch (e) { $('historyBody').innerHTML = `<div class="hint">${esc(e.message)}</div>`; }
+  };
+  $('historyClose').onclick = () => { $('history').hidden = true; };
+  ['review', 'history'].forEach(id => $(id).addEventListener('click', e => { if (e.target === $(id)) $(id).hidden = true; }));
+
+  // ---------- files and reset (plain website copy)
   $('btnImport').onclick = () => $('fileImport').click();
   $('fileImport').onchange = e => {
     const f = e.target.files[0]; if (!f) return;
-    f.text().then(txt => { try { const j = JSON.parse(txt.replace(/^\s*window\.UNIT_MAP\s*=\s*/, '').replace(/;\s*$/, '')); if (!j.units) throw 0; M = j; M.old = M.old || {}; M.new = M.new || {}; save(); render(); } catch (err) { alert('That is not a unit-map file.'); } });
+    f.text().then(txt => { try { const j = JSON.parse(txt.replace(/^\s*window\.UNIT_MAP\s*=\s*/, '').replace(/;\s*$/, '')); if (!j.units) throw 0; change(() => { M = normalize(j); }); } catch (err) { alert('That is not a unit-map file.'); } });
     e.target.value = '';
   };
-  $('btnReset').onclick = () => { if (confirm('Throw away your changes and go back to the bank’s current mapping?')) { M = defaults(); save(); render(); } };
+  $('btnReset').onclick = () => { if (confirm('Go back to the order built into the question bank? You can undo this.')) change(() => { M = defaults(); }); };
   render();
 })();
 </script>
