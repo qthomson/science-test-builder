@@ -1,6 +1,6 @@
 // Chemistry edition of the Text Test Builder: subject strings (these equal the app's built-in defaults).
 window.SUBJECT = {
-  name: 'Chemistry', app: 'Chem Test Builder', defaultTitle: 'Chemistry Review', storage: 'ttb.', newPrefix: 'PSC',
+  name: 'Chemistry', app: 'Chemistry Test Builder', defaultTitle: 'Chemistry Review', storage: 'ttb.', newPrefix: 'PSC',
   oldEdition: '2011', newEdition: '2025',
   renderer: {
     tableNames: { 'PT-ox': 'Periodic Table oxidation states', 'PT-config': 'Periodic Table electron configurations', 'PT-mass': 'Periodic Table masses' },

@@ -16,6 +16,8 @@
   button:hover { border-color: var(--maroon); }
   header button { background: #fff; color: #3d070b; border-color: #fff; font-weight: bold; }
   header button.ghost { background: transparent; color: #fff; border-color: rgba(255,255,255,.6); font-weight: normal; }
+  header #btnDark { width: 32px; height: 32px; padding: 0; border-radius: 50%; background: transparent; color: #fff; border: 1.5px solid rgba(255,255,255,.6); display: grid; place-items: center; flex: none; }
+  header #btnDark:hover { border-color: #fff; }
   button.small { padding: 2px 9px; font-size: 12px; }
   button:disabled { opacity: .45; cursor: default; }
   button.primary { background: #3d070b; color: #fff; border-color: #3d070b; }
@@ -88,6 +90,7 @@
   <h1 id="h1">Unit order</h1>
   <span class="chip" id="chg" hidden></span>
   <span class="spacer"></span>
+  <button id="btnDark" title="Switch to dark mode"></button>
   <button id="btnUndo" class="ghost" disabled title="Undo the last change (Ctrl+Z)">Undo</button>
   <button id="btnImport" class="ghost" title="Load a unit-map.js file">Open file…</button><input type="file" id="fileImport" accept=".js,.json" hidden>
   <button id="btnReset" class="ghost" title="Go back to the order built into the question bank">Reset</button>
@@ -128,7 +131,24 @@
   const SHARED = !!(window.google && google.script && google.script.run);
   const call = (fn, ...args) => new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(e => rej(new Error(e.message || String(e)))).rpc(fn, args, window.SUBJECT_ID || (window.BANK && window.BANK.subject) || 'chemistry'));
   if (!B) { $('main').innerHTML = '<div class="warn">bank/bank.js was not found next to this page.</div>'; return; }
-  try { if ((JSON.parse(localStorage.getItem('stb.prefs') || '{}') || {}).dark) document.body.classList.add('dark'); } catch (e) { }
+  // dark mode: the same preference as the home page and the builder (this browser, and the account when signed in)
+  let PREFS = {}; try { PREFS = JSON.parse(localStorage.getItem('stb.prefs') || '{}') || {}; } catch (e) { }
+  if (/[?&]dark=1/.test(location.search || '')) PREFS.dark = true;
+  const keepPrefs = () => { try { localStorage.setItem('stb.prefs', JSON.stringify(PREFS)); } catch (e) { } };
+  const MOON = '<path d="M20 14.3A8.3 8.3 0 0 1 9.7 4a7.6 7.6 0 1 0 10.3 10.3z"/>';
+  const SUN = '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>';
+  const paintDark = () => {
+    document.body.classList.toggle('dark', !!PREFS.dark); const b = document.getElementById('btnDark'); if (!b) return;
+    b.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${PREFS.dark ? SUN : MOON}</svg>`;
+    b.title = PREFS.dark ? 'Switch to light mode' : 'Switch to dark mode';
+  };
+  paintDark();
+  document.getElementById('btnDark').onclick = () => {
+    const want = !PREFS.dark; PREFS.dark = want; keepPrefs(); paintDark();
+    // signed in: the account's other preferences (defaults, tours seen) are read first so this save cannot drop them
+    if (SHARED) call('getPrefs').then(p => { PREFS = Object.assign({}, PREFS, p || {}, { dark: want }); keepPrefs(); return call('setPrefs', PREFS); }).catch(() => { });
+  };
+  if (SHARED) call('getPrefs').then(p => { if (p && Object.keys(p).length) { PREFS = Object.assign({}, PREFS, p); keepPrefs(); paintDark(); } }).catch(() => { });
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const clone = o => JSON.parse(JSON.stringify(o));
   const short = email => String(email || '').split('@')[0];
