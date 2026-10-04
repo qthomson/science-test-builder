@@ -120,7 +120,7 @@
 <div id="history" class="modal" hidden><div class="dialog"><h2>Earlier saved orders</h2><div class="hint">Restoring one loads it here as unsaved changes. Nothing reaches the department until you review and save.</div>
   <div id="historyBody" style="margin-top:8px"></div><div class="actions"><span style="flex:1"></span><button id="historyClose">Close</button></div></div></div>
 <div id="toast" hidden></div>
-<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="../lib/mockbackend.js"><\/script>');   // local testing of the signed-in behaviour</script>
+<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="../lib/mockbackend.js"><\/script>');</script>
 <script src="bank/bank.js"></script>
 <script src="bank-new/new.js" onerror="window.BANK_NEW = null"></script>
 <script src="bank/unit-map.js" onerror="window.UNIT_MAP = null"></script>
