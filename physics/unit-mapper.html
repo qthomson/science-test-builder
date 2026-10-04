@@ -212,7 +212,7 @@
     const common = ids => ids.filter(id => bu.some(x => x.id === id) && mu.some(x => x.id === id)).join(',');
     if (common(bu.map(u => u.id)) !== common(mu.map(u => u.id))) out.units.push('Unit order is now: ' + mu.map(u => u.name).join(', '));
     ['old', 'new'].forEach(k => Object.keys(TYPES[k]).map(Number).sort((a, b) => a - b).forEach(t => {
-      if (uKey(M[k][t]) !== uKey(baseline[k][t])) out.moved.push(`${PRE[k]}${t} ${TYPES[k][t].name}: ${uFull(baseline[k][t], baseline)} → ${uFull(M[k][t])}`); }));
+      if (uKey(M[k][t]) !== uKey(baseline[k][t])) out.moved.push(`${lab(k, t)} ${TYPES[k][t].name}: ${uFull(baseline[k][t], baseline)} → ${uFull(M[k][t])}`); }));
     Object.keys(TYPES.old).map(Number).forEach(t => { if (isRet(t) !== isRet(t, baseline)) out.retired.push(`${isRet(t) ? 'Retired' : 'Brought back'}: T${t} ${TYPES.old[t].name}`); });
     out.n = out.units.length + out.moved.length + out.retired.length; return out;
   }
@@ -252,15 +252,16 @@
   }
   function typeRow(k, t, showUnit) {
     const ty = TYPES[k][t], moved = uKey(M[k][t]) !== uKey(baseline[k][t]), ret = k === 'old' && isRet(t), retChg = k === 'old' && ret !== isRet(t, baseline);
-    return `<div class="t${moved || retChg ? ' chg' : ''}${ret ? ' ret' : ''}" draggable="true" data-t="${t}"><span class="h">⋮⋮</span><span class="n">${PRE[k]}${t}</span><span class="nm">${esc(ty.name)}</span>` +
+    return `<div class="t${moved || retChg ? ' chg' : ''}${ret ? ' ret' : ''}" draggable="true" data-t="${t}"><span class="h">⋮⋮</span><span class="n">${lab(k, t)}</span><span class="nm">${esc(ty.name)}</span>` +
       (moved ? `<span class="chip">moved from ${esc(uShort(baseline[k][t], baseline))}</span>` : '') + (retChg ? `<span class="chip">${ret ? 'newly retired' : 'brought back'}</span>` : '') +
       `<span class="cnt">${count[k][t] || 0} question${(count[k][t] || 0) === 1 ? '' : 's'}</span>${unitSelect(k, t)}<button class="eye" data-ex="${t}" title="Show example questions of this type">Examples</button>` +
       (k === 'old' ? `<label title="A retired type is hidden in the test builder"><input type="checkbox" data-ret="${t}"${ret ? ' checked' : ''}> Retire</label>` : '') + `</div>`;
   }
+  const lab = (k, t) => TYPES[k][t].code || (PRE[k] + t);
   function renderTypes() {
     const s = $('search').value.trim().toLowerCase(), chg = $('chgOnly').checked, everywhere = !!s || chg;
-    let ids = Object.keys(TYPES[kind]).map(Number).sort((a, b) => a - b);
-    ids = everywhere ? ids.filter(t => (!s || (PRE[kind] + t + ' ' + TYPES[kind][t].name).toLowerCase().includes(s)) && (!chg || typeChanged(kind, t))) : ids.filter(t => uKey(M[kind][t]) === selU);
+    let ids = Object.keys(TYPES[kind]).map(Number).sort((a, b) => (TYPES[kind][a].order ?? a) - (TYPES[kind][b].order ?? b));
+    ids = everywhere ? ids.filter(t => (!s || (lab(kind, t) + ' ' + TYPES[kind][t].name).toLowerCase().includes(s)) && (!chg || typeChanged(kind, t))) : ids.filter(t => uKey(M[kind][t]) === selU);
     $('thead').textContent = everywhere ? `${ids.length} ${chg ? 'changed ' : ''}type${ids.length === 1 ? '' : 's'}${s ? ' matching "' + $('search').value.trim() + '"' : ''}, in every unit`
       : (selU === 'misc' ? 'Misc / other' : selU === 'none' ? 'No unit' : uFull(Number(selU))) + ` · ${ids.length} type${ids.length === 1 ? '' : 's'}`;
     const live = everywhere || kind === 'new' ? ids : ids.filter(t => !isRet(t)), gone = everywhere || kind === 'new' ? [] : ids.filter(t => isRet(t));
@@ -285,7 +286,7 @@
       BN.clusters.forEach(c => c.questions.forEach(q => { if (q.type === t && exs.length < 4) exs.push({ src: `${c.sample ? 'Sample 2025' : c.session + ' ' + c.year} · ${c.title || ''} Q${q.q} · ${q.mc ? 'multiple choice' : 'constructed response'}`, text: clean(q.text) || q.descriptor }); }));
     }
     exOpen = k + t; $('main').classList.add('ex'); $('examples').hidden = false;
-    $('examples').innerHTML = `<h3><span>${PRE[k]}${t}. ${esc(TYPES[k][t].name)}</span><button class="small" id="exClose">Close</button></h3>` +
+    $('examples').innerHTML = `<h3><span>${lab(k, t)}. ${esc(TYPES[k][t].name)}</span><button class="small" id="exClose">Close</button></h3>` +
       (exs.length ? exs.map(e => `<div class="exq"><div class="src">${esc(e.src)}</div>${esc(e.text)}</div>`).join('') : '<div class="hint">No question in the bank uses this type yet.</div>') +
       '<div class="hint">Text only. Figures are not shown here.</div>';
     $('exClose').onclick = () => { exOpen = null; $('main').classList.remove('ex'); $('examples').hidden = true; };

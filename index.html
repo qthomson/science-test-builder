@@ -407,15 +407,15 @@
   </div>
 </div>
 
-<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610040109"><\/script>');</script>
-<script src="lib/appui.js?v=202610040109" onerror="document.body.classList.remove('boot')"></script>
-<script src="subjects.js?v=202610040109" onerror="window.SUBJECTS = null"></script>
+<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610041741"><\/script>');</script>
+<script src="lib/appui.js?v=202610041741" onerror="document.body.classList.remove('boot')"></script>
+<script src="subjects.js?v=202610041741" onerror="window.SUBJECTS = null"></script>
 <script>
 // Subject chooser. With subjects.js present (the merged site), the data folders are <subject>/bank…; without it, this
 // is a single-subject copy and the folders sit next to the page. The choice is kept in localStorage ('stb.subject');
 // ?subject=physics in the URL overrides it. Later, the shared-library account can carry the preference (see whoAmI).
 (function () {
-  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610040109';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
+  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610041741';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
   // On the Apps Script deployment the server injects SUBJECT_PARAM / HOME_URL / SITE_ROOT (build_appsscript.py); on the website they are absent
   const ROOT = window.SITE_ROOT || '', HOME = window.HOME_URL || location.pathname;
   if (new URLSearchParams(location.search).get('home') || window.FORCE_HOME) { try { localStorage.removeItem('stb.subject'); } catch (e) {} }   // ?home=1: the home page, whatever subject was open last (the signed-in server passes it as FORCE_HOME)
@@ -450,8 +450,8 @@
 <script src="lib/pdf-lib.min.js"></script>
 <script src="lib/fontkit.umd.min.js"></script>
 <script src="lib/fonts.js"></script>
-<script src="lib/textpdf.js?v=202610040109"></script>
-<script src="lib/writer.js?v=202610040109"></script>
+<script src="lib/textpdf.js?v=202610041741"></script>
+<script src="lib/writer.js?v=202610041741"></script>
 <script>
 (async function () {
   if (window.NO_SUBJECT) return;                      // the chooser is showing
@@ -645,11 +645,12 @@
   function fillTypes() {
     const u = fUnit.value; const cur = fType.value;
     fType.innerHTML = '<option value="">All types</option>';
-    const used = new Set(Q.map(q => q.type));
-    Object.keys(T).map(Number).sort((a, b) => a - b).forEach(t => {
+    const used = new Set(Q.map(q => q.type)); C.forEach(c => c.items.forEach(it => (it.types || []).forEach(t => used.add(t))));   // written-response-only types are listed too
+    Object.keys(T).map(Number).sort((a, b) => (T[a].order ?? a) - (T[b].order ?? b)).forEach(t => {
       if (!used.has(t) || RETIRED.has(t)) return;   // a retired type is not offered
       if (u && String(T[t].unit) !== u) return;
-      fType.append(new Option(`${t}. ${T[t].name}`, t));
+      const sb = document.getElementById('fSub'); if (sb && sb.value && String(T[t].subtopic) !== sb.value) return;   // physics: a chosen subtopic narrows the types
+      fType.append(new Option(`${T[t].code || t}. ${T[t].name}`, t));
     });
     fType.append(new Option('Misc / other', 'misc'));
     fType.value = [...fType.options].some(o => o.value === cur) ? cur : '';
@@ -686,7 +687,7 @@
     $('fSubRow').hidden = false; $('nSubRow').hidden = false;
   }
   fillSubs();
-  if (SUBS.length) { $('fSub').addEventListener('input', renderList); $('nSub').addEventListener('input', renderList); $('nUnit').addEventListener('input', fillSubs); }
+  if (SUBS.length) { $('fSub').addEventListener('input', () => { fillTypes(); renderList(); }); $('nSub').addEventListener('input', renderList); $('nUnit').addEventListener('input', fillSubs); }
   function matches(q) {
     if (window.APPUI && APPUI.hide(q)) return false;
     if (RETIRED.size && (q.kind === 'cluster' ? q.items.every(it => RETIRED.has(it.type)) : q.kind !== 'custom' && RETIRED.has(q.type))) return false;
@@ -1417,7 +1418,7 @@
   mUnit.append(new Option('Misc / other', 'misc'));
   function fillBuilderTypes(keep) {
     const u = mUnit.value; mType.innerHTML = '';
-    Object.keys(T).map(Number).sort((a, b) => a - b).forEach(t => { if (u === 'misc' || String(T[t].unit) === u) mType.append(new Option(`${t}. ${T[t].name}`, t)); });
+    Object.keys(T).map(Number).sort((a, b) => (T[a].order ?? a) - (T[b].order ?? b)).forEach(t => { if (u === 'misc' || String(T[t].unit) === u) mType.append(new Option(`${T[t].code || t}. ${T[t].name}`, t)); });
     mType.append(new Option('Misc / other', 'misc'));
     mType.value = keep != null && [...mType.options].some(o => o.value === String(keep)) ? String(keep) : 'misc';
   }
@@ -1495,7 +1496,7 @@
 
   ['fSearch', 'fExam', 'fFig', 'fKind', 'fRef', 'hidePicked'].forEach(id => $(id).addEventListener('input', renderList));
   fType.addEventListener('input', renderList);
-  fUnit.addEventListener('input', () => { fillTypes(); fillSubs(); renderList(); });
+  fUnit.addEventListener('input', () => { fillSubs(); fillTypes(); renderList(); });
   ['oTitle'].concat(OPTS).forEach(id => $(id).addEventListener('input', () => { persist(); if (!['oKind', 'oUnitTag'].includes(id)) renderSheet(); if (!$('settings').hidden) versionHint(); }));
 
   setBank(bankMode); renderSheet();
