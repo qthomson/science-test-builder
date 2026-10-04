@@ -407,15 +407,15 @@
   </div>
 </div>
 
-<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610040003"><\/script>');</script>
-<script src="lib/appui.js?v=202610040003" onerror="document.body.classList.remove('boot')"></script>
-<script src="subjects.js?v=202610040003" onerror="window.SUBJECTS = null"></script>
+<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610040058"><\/script>');</script>
+<script src="lib/appui.js?v=202610040058" onerror="document.body.classList.remove('boot')"></script>
+<script src="subjects.js?v=202610040058" onerror="window.SUBJECTS = null"></script>
 <script>
 // Subject chooser. With subjects.js present (the merged site), the data folders are <subject>/bank…; without it, this
 // is a single-subject copy and the folders sit next to the page. The choice is kept in localStorage ('stb.subject');
 // ?subject=physics in the URL overrides it. Later, the shared-library account can carry the preference (see whoAmI).
 (function () {
-  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610040003';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
+  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610040058';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
   // On the Apps Script deployment the server injects SUBJECT_PARAM / HOME_URL / SITE_ROOT (build_appsscript.py); on the website they are absent
   const ROOT = window.SITE_ROOT || '', HOME = window.HOME_URL || location.pathname;
   if (new URLSearchParams(location.search).get('home') || window.FORCE_HOME) { try { localStorage.removeItem('stb.subject'); } catch (e) {} }   // ?home=1: the home page, whatever subject was open last (the signed-in server passes it as FORCE_HOME)
@@ -441,19 +441,17 @@
   }
   window.SITE_BASE = ROOT + base;
   if (!(window.APPUI && APPUI.early)) document.body.classList.remove('boot');
-  ['bank/subject.js" onerror="window.SUBJECT = null', 'bank/reftables.js" onerror="window.REFTABLES = null', 'bank/bank.js', 'bank-new/new.js" onerror="window.BANK_NEW = null', 'bank/unit-map.js" onerror="window.UNIT_MAP = null', 'bank/custom.js" onerror="window.CUSTOM = window.CUSTOM || []']
+  if (window.APPUI && APPUI.boot) APPUI.boot();
+  ['bank/subject.js" onerror="window.SUBJECT = null', 'bank/bank.js', 'bank-new/new.js" onerror="window.BANK_NEW = null', 'bank/unit-map.js" onerror="window.UNIT_MAP = null', 'bank/custom.js" onerror="window.CUSTOM = window.CUSTOM || []']
     .forEach((src, k) => document.write('<script src="' + ROOT + base + src.replace(/\.js/, '.js?v=' + BUILD) + '"><\/script>' + (k ? '' : '<script>if (window.APPUI && APPUI.early) APPUI.early();<\/script>')));
+  document.write('<script>if (window.APPUI && APPUI.preload) APPUI.preload();<\/script>');
 })();
 </script>
 <script src="lib/pdf-lib.min.js"></script>
 <script src="lib/fontkit.umd.min.js"></script>
-<script src="lib/pdf.worker.min.js"></script>
-<script src="lib/pdf.min.js"></script>
 <script src="lib/fonts.js"></script>
-<script src="lib/textpdf.js?v=202610040003"></script>
-<script src="lib/docx.umd.js"></script>
-<script src="lib/textdocx.js?v=202610040003"></script>
-<script src="lib/writer.js?v=202610040003"></script>
+<script src="lib/textpdf.js?v=202610040058"></script>
+<script src="lib/writer.js?v=202610040058"></script>
 <script>
 (async function () {
   if (window.NO_SUBJECT) return;                      // the chooser is showing
@@ -462,14 +460,21 @@
   if (!B) { $('empty').textContent = 'bank/bank.js not found. Keep this file in the same folder as the "bank" and "lib" folders.'; return; }
   // ---------- shared mode: this page is served by the Apps Script backend (department library, sign-in, shared questions)
   const SHARED = !!(window.google && google.script && google.script.run);
+  // the Word library and the PDF-reading library are large and serve one feature each: they load on first use
+  const libs = {};
+  const loadLib = path => libs[path] || (libs[path] = new Promise((res, rej) => {
+    const el = document.createElement('script'); el.src = (window.SITE_ROOT || '') + path;
+    el.onload = () => res(); el.onerror = () => { delete libs[path]; rej(new Error('A part of the app (' + path.replace(/[?].*/, '') + ') could not be loaded. Check the connection and try again.')); };
+    document.head.appendChild(el); }));
   const call = (fn, ...args) => new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(e => rej(new Error(e.message || String(e)))).rpc(fn, args, window.SUBJECT_ID || 'chemistry'));
   let ME = null;
   if (SHARED) {
     try {
-      const [me, um, cus] = await Promise.all([call('whoAmI'), call('getUnitMap'), call('listCustom')]);
+      // asked at the very start of the page (APPUI.boot) while the files were loading; without that, asked now
+      const got = p => (p ? p.then(r => { if (!r.ok) throw r.e; return r.v; }) : null), pre = window.BOOT || {};
+      const [bt, cus] = await Promise.all([got(pre.main) || call('boot'), got(pre.custom) || call('listCustom')]);
+      const me = bt.me, um = bt.unitMap; window.BOOT_PREFS = bt.prefs || {};
       ME = me; window.UNIT_MAP = um || window.UNIT_MAP || null; window.CUSTOM = cus || [];
-      // per-account subject: the server opens the remembered subject (doGet); here we record the one in use
-      if (me && window.SUBJECTS && window.SUBJECT_ID && me.subject !== window.SUBJECT_ID) call('setSubject', window.SUBJECT_ID).catch(() => {});
       $('whoami').textContent = me.email ? '· ' + me.email : '';
     } catch (e) { alert('The shared library could not be reached: ' + e.message + '\nYou can keep working; saving will fall back to files.'); }
   }
@@ -570,6 +575,12 @@
     return loading[exam];
   }
   const ensurePaths = paths => Promise.all([...new Set(paths.map(examOf).filter(Boolean))].map(ensureExam));
+  // the pictures of the reference tables (bank/reftables.js) are large and matter only once a worksheet has questions
+  let refTablesP = null;
+  const ensureRefTables = () => refTablesP || (refTablesP = new Promise(res => {
+    if (window.REFTABLES !== undefined || SUBJECT.noRef) { res(); return; }
+    const el = document.createElement('script'); el.src = (window.SITE_BASE || '') + 'bank/reftables.js?v=' + (window.BUILD || '');
+    el.onload = () => res(); el.onerror = () => { window.REFTABLES = null; res(); }; document.head.appendChild(el); }));
   const ensureIds = ids => ensurePaths(ids);
   function bytesOf(path) {
     const e = IMGS[path]; if (!e) return null;
@@ -1004,7 +1015,8 @@
         }
       }
       progress('Preparing PDF page…');
-      const pdfjs = window.pdfjsLib; pdfjs.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.min.js';
+      await loadLib('lib/pdf.worker.min.js'); await loadLib('lib/pdf.min.js');
+      const pdfjs = window.pdfjsLib; pdfjs.GlobalWorkerOptions.workerSrc = (window.SITE_ROOT || '') + 'lib/pdf.worker.min.js';
       const view = await pdfjs.getDocument({ data: bytes.slice() }).promise;
       for (const pi of pages) {
         const one = await PDFDocument.create(); const [pg] = await one.copyPages(src, [pi]); one.addPage(pg);
@@ -1084,7 +1096,7 @@
     const wrap = $('sheet'); $('empty').hidden = picked.length > 0; wrap.hidden = picked.length === 0;
     if (!picked.length) { wrap.innerHTML = ''; $('status').textContent = ''; $('tables').style.display = 'none'; if (window.APPUI) APPUI.onSheet(null); return; }
     const token = ++renderToken;
-    try { await ensurePaths(neededPaths()); } catch (e) { alert(e.message); }
+    try { await Promise.all([ensurePaths(neededPaths()), ensureRefTables()]); } catch (e) { alert(e.message); }
     if (token !== renderToken) return;
     const M = buildModel();
     const title = esc($('oTitle').value);
@@ -1362,16 +1374,17 @@
   }
   const keyOpts = (M, label) => Object.assign(pdfOpts(label), { standards: opt('oStdSum') ? stdSummary(M) : null });
   const makePDF = (M, mode, version, label) => ENG.makePDF(M, mode, version, keyOpts(M, label));
-  const DOCX = window.TextDOCX && window.docx ? TextDOCX.create({ docx: window.docx, image: p => bytesOf(p), engine: ENG }) : null;
+  let DOCX = null;
+  const ensureDocx = async () => { if (!DOCX) { await loadLib('lib/docx.umd.js'); await loadLib('lib/textdocx.js?v=' + (window.BUILD || '')); DOCX = TextDOCX.create({ docx: window.docx, image: p => bytesOf(p), engine: ENG }); } return DOCX; };
   const makeDOCX = async (M, mode, version, label) => new Uint8Array(await (await DOCX.makeDOCX(M, mode, version, keyOpts(M, label))).arrayBuffer());
   // "On separate sheet": the needed tables and constants as one more file next to the worksheet
   const refSheetModel = M => M.refSheet && M.refSheet.length ? ENG.buildModel(M.refSheet, { cols: 1, pt: M.refOpts.pt, start: 1, blank: false, note: false, fill: false }) : null;
   const refSheetOpts = () => Object.assign(pdfOpts(null), { title: ($('oTitle').value || 'Worksheet') + ': needed tables and constants', blanks: false, note: false, key: false });
   $('btnWord').onclick = async () => {
     if (!picked.length) return;
-    if (!DOCX) { alert('The Word library (lib/docx.umd.js) was not found next to the app.'); return; }
+    try { progress('Loading the Word library…'); await ensureDocx(); } catch (e) { progress(null); alert(e.message); return; }
     try {
-      progress('Loading questions…'); await ensurePaths(neededPaths());
+      progress('Loading questions…'); await Promise.all([ensurePaths(neededPaths()), ensureRefTables()]);
       const M = buildModel(); const d = versionDocs(); const files = [];
       for (const s of d.sheets) { progress(`Building ${safeName()}${s.suffix}.docx…`); files.push([await makeDOCX(M, 'sheet', s.v, s.label), safeName() + s.suffix + '.docx']); }
       for (const k of d.keys) { progress(`Building ${safeName()}${k.suffix}.docx…`); files.push([await makeDOCX(M, 'key', k.v, null), safeName() + k.suffix + '.docx']); }
@@ -1382,7 +1395,7 @@
   $('btnPDF').onclick = async () => {
     if (!picked.length) return;
     try {
-      progress('Loading questions…'); await ensurePaths(neededPaths());
+      progress('Loading questions…'); await Promise.all([ensurePaths(neededPaths()), ensureRefTables()]);
       const M = buildModel(); const d = versionDocs(); const files = [];
       for (const s of d.sheets) { progress(`Building ${safeName()}${s.suffix}.pdf…`); files.push([await makePDF(M, 'sheet', s.v, s.label), safeName() + s.suffix + '.pdf']); }
       for (const k of d.keys) { progress(`Building ${safeName()}${k.suffix}.pdf…`); files.push([await makePDF(M, 'key', k.v, null), safeName() + k.suffix + '.pdf']); }
@@ -1495,6 +1508,7 @@
     get state() { return { picked: picked.slice(), extras: Object.assign({}, extras), dropped: JSON.parse(JSON.stringify(dropped)) }; },
     setState(s) { picked = s.picked.slice(); extras = Object.assign({}, s.extras); dropped = JSON.parse(JSON.stringify(s.dropped || {})); persist(); renderList(); renderSheet(); } };
   if (window.APPUI) APPUI.init(window.CTB);
+  setTimeout(ensureRefTables, 2500);
 })();
 </script>
 </body>
