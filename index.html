@@ -407,15 +407,15 @@
   </div>
 </div>
 
-<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610081733"><\/script>');</script>
-<script src="lib/appui.js?v=202610081733" onerror="document.body.classList.remove('boot')"></script>
-<script src="subjects.js?v=202610081733" onerror="window.SUBJECTS = null"></script>
+<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610081754"><\/script>');</script>
+<script src="lib/appui.js?v=202610081754" onerror="document.body.classList.remove('boot')"></script>
+<script src="subjects.js?v=202610081754" onerror="window.SUBJECTS = null"></script>
 <script>
 // Subject chooser. With subjects.js present (the merged site), the data folders are <subject>/bank…; without it, this
 // is a single-subject copy and the folders sit next to the page. The choice is kept in localStorage ('stb.subject');
 // ?subject=physics in the URL overrides it. Later, the shared-library account can carry the preference (see whoAmI).
 (function () {
-  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610081733';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
+  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610081754';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
   // On the Apps Script deployment the server injects SUBJECT_PARAM / HOME_URL / SITE_ROOT (build_appsscript.py); on the website they are absent
   const ROOT = window.SITE_ROOT || '', HOME = window.HOME_URL || location.pathname;
   if (new URLSearchParams(location.search).get('home') || window.FORCE_HOME) { try { localStorage.removeItem('stb.subject'); } catch (e) {} }   // ?home=1: the home page, whatever subject was open last (the signed-in server passes it as FORCE_HOME)
@@ -450,8 +450,8 @@
 <script src="lib/pdf-lib.min.js"></script>
 <script src="lib/fontkit.umd.min.js"></script>
 <script src="lib/fonts.js"></script>
-<script src="lib/textpdf.js?v=202610081733"></script>
-<script src="lib/writer.js?v=202610081733"></script>
+<script src="lib/textpdf.js?v=202610081754"></script>
+<script src="lib/writer.js?v=202610081754"></script>
 <script>
 (async function () {
   if (window.NO_SUBJECT) return;                      // the chooser is showing
@@ -1247,6 +1247,13 @@
   const KIND_NAME = { worksheet: 'Worksheet', practice: 'Practice', quiz: 'Quiz', test: 'Test', lab: 'Lab' };
   const unitTagLabel = u => !u ? '' : u === 'lab' ? 'Lab' : 'U' + uNum(u);
   let libRows = [];
+  // Google Docs made from a saved worksheet (newest first): a link per Doc, the newest in full and the rest as a short list
+  function docLinks(docs) {
+    if (!docs || !docs.length) return '';
+    const a = (d, label) => `<a href="${esc(d.url)}" target="_blank" rel="noopener" title="${esc(d.name)} — made ${fmtDate(d.saved)}"><button class="small">${label}</button></a>`;
+    const label = d => { const m = d.name.match(/-(key|reference|[A-D](?:-key)?)$/); return m ? m[1] : 'Doc'; };
+    return docs.slice(0, 4).map(d => a(d, esc(label(d)))).join(' ');
+  }
   function renderLibrary() {
     const ym = $('lfYearMode').value, yr = Number($('lfYear').value) || 0, own = $('lfOwner').value, kind = $('lfKind').value, unit = $('lfUnit').value, q = $('lfSearch').value.trim().toLowerCase();
     const rows = libRows.filter(r => {
@@ -1260,8 +1267,8 @@
       return true;
     });
     if (!libRows.length) { $('libList').innerHTML = '<div class="hint">Nothing saved yet. Build a worksheet and use Save….</div>'; return; }
-    $('libList').innerHTML = rows.length ? `<table class="libtable"><tr><th>Title</th><th>Type</th><th>Unit</th><th>Saved by</th><th>Date</th><th>Qs</th><th></th></tr>` +
-        rows.map(r => `<tr><td>${esc(r.title)}</td><td>${KIND_NAME[r.kind] || 'Worksheet'}</td><td>${unitTagLabel(r.unit)}</td><td>${esc(short(r.owner))}</td><td>${fmtDate(r.saved)}</td><td>${r.nq}</td><td style="white-space:nowrap"><button class="small primary" data-open="${r.id}">Open</button> <button class="small" data-copy="${r.id}" title="Open as a new copy that saves separately">Copy</button> ${r.mine === false ? '' : `<button class="small" data-hist="${r.id}" title="Earlier saved versions of this worksheet">History</button> `}${r.mine === false ? '' : `<button class="small danger" data-del="${r.id}" title="Remove from the library (older versions stay in the sheet)">&#10005;</button>`}</td></tr>`).join('') + `</table>`
+    $('libList').innerHTML = rows.length ? `<table class="libtable"><tr><th>Title</th><th>Type</th><th>Unit</th><th>Saved by</th><th>Date</th><th>Qs</th><th>Docs</th><th></th></tr>` +
+        rows.map(r => `<tr><td>${esc(r.title)}</td><td>${KIND_NAME[r.kind] || 'Worksheet'}</td><td>${unitTagLabel(r.unit)}</td><td>${esc(short(r.owner))}</td><td>${fmtDate(r.saved)}</td><td>${r.nq}</td><td style="white-space:nowrap">${docLinks(r.docs)}</td><td style="white-space:nowrap"><button class="small primary" data-open="${r.id}">Open</button> <button class="small" data-copy="${r.id}" title="Open as a new copy that saves separately">Copy</button> ${r.mine === false ? '' : `<button class="small" data-hist="${r.id}" title="Earlier saved versions of this worksheet">History</button> `}${r.mine === false ? '' : `<button class="small danger" data-del="${r.id}" title="Remove from the library (older versions stay in the sheet)">&#10005;</button>`}</td></tr>`).join('') + `</table>`
       : '<div class="hint">Nothing matches those filters.</div>';
     wireLibraryButtons(rows);
   }
@@ -1407,7 +1414,7 @@
       const send = async (bytes, name) => {
         progress(`Sending ${name} to Google Docs…`);
         let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
-        made.push(await call('exportDoc', name, btoa(s)));
+        made.push(await call('exportDoc', name, btoa(s), currentWs ? currentWs.id : null));
       };
       const mk = async (model, mode, v, opts) => new Uint8Array(await (await DOCX.makeDOCX(model, mode, v, Object.assign(opts, { docs: true }))).arrayBuffer());   // built for Google's importer
       for (const s of d.sheets) await send(await mk(M, 'sheet', s.v, keyOpts(M, s.label)), safeName() + s.suffix);
@@ -1415,7 +1422,7 @@
       const RS = refSheetModel(M); if (RS) await send(await mk(RS, 'sheet', 'A', refSheetOpts()), safeName() + '-reference');
       progress(null);
       const dlg = $('dl').querySelector('.dialog'); dlg.querySelector('h2').textContent = 'Your Google Docs are ready';
-      dlg.querySelector('.hint').textContent = 'Each file is now a Google Doc in the department folder, shared with you. Google reflows the text, so pages can differ from the PDF.';
+      dlg.querySelector('.hint').textContent = 'Each file is now a Google Doc in the department folder, shared with you. ' + (currentWs ? 'The links are kept with this worksheet in the library (Open… → Doc).' : 'Save the worksheet to keep these links in the library.');
       const list = $('dlList'); list.innerHTML = '';
       made.forEach(r => { const row = document.createElement('div'); row.className = 'row'; row.style.justifyContent = 'space-between';
         row.innerHTML = `<span>${esc(r.name)}</span><a href="${esc(r.url)}" target="_blank" rel="noopener"><button class="small primary">Open in Google Docs</button></a>`; list.appendChild(row); });
