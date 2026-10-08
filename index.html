@@ -407,15 +407,15 @@
   </div>
 </div>
 
-<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610081720"><\/script>');</script>
-<script src="lib/appui.js?v=202610081720" onerror="document.body.classList.remove('boot')"></script>
-<script src="subjects.js?v=202610081720" onerror="window.SUBJECTS = null"></script>
+<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610081733"><\/script>');</script>
+<script src="lib/appui.js?v=202610081733" onerror="document.body.classList.remove('boot')"></script>
+<script src="subjects.js?v=202610081733" onerror="window.SUBJECTS = null"></script>
 <script>
 // Subject chooser. With subjects.js present (the merged site), the data folders are <subject>/bank…; without it, this
 // is a single-subject copy and the folders sit next to the page. The choice is kept in localStorage ('stb.subject');
 // ?subject=physics in the URL overrides it. Later, the shared-library account can carry the preference (see whoAmI).
 (function () {
-  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610081720';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
+  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610081733';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
   // On the Apps Script deployment the server injects SUBJECT_PARAM / HOME_URL / SITE_ROOT (build_appsscript.py); on the website they are absent
   const ROOT = window.SITE_ROOT || '', HOME = window.HOME_URL || location.pathname;
   if (new URLSearchParams(location.search).get('home') || window.FORCE_HOME) { try { localStorage.removeItem('stb.subject'); } catch (e) {} }   // ?home=1: the home page, whatever subject was open last (the signed-in server passes it as FORCE_HOME)
@@ -450,8 +450,8 @@
 <script src="lib/pdf-lib.min.js"></script>
 <script src="lib/fontkit.umd.min.js"></script>
 <script src="lib/fonts.js"></script>
-<script src="lib/textpdf.js?v=202610081720"></script>
-<script src="lib/writer.js?v=202610081720"></script>
+<script src="lib/textpdf.js?v=202610081733"></script>
+<script src="lib/writer.js?v=202610081733"></script>
 <script>
 (async function () {
   if (window.NO_SUBJECT) return;                      // the chooser is showing
@@ -1409,9 +1409,10 @@
         let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
         made.push(await call('exportDoc', name, btoa(s)));
       };
-      for (const s of d.sheets) await send(await makeDOCX(M, 'sheet', s.v, s.label), safeName() + s.suffix);
-      for (const k of d.keys) await send(await makeDOCX(M, 'key', k.v, null), safeName() + k.suffix);
-      const RS = refSheetModel(M); if (RS) await send(new Uint8Array(await (await DOCX.makeDOCX(RS, 'sheet', 'A', refSheetOpts())).arrayBuffer()), safeName() + '-reference');
+      const mk = async (model, mode, v, opts) => new Uint8Array(await (await DOCX.makeDOCX(model, mode, v, Object.assign(opts, { docs: true }))).arrayBuffer());   // built for Google's importer
+      for (const s of d.sheets) await send(await mk(M, 'sheet', s.v, keyOpts(M, s.label)), safeName() + s.suffix);
+      for (const k of d.keys) await send(await mk(M, 'key', k.v, keyOpts(M, null)), safeName() + k.suffix);
+      const RS = refSheetModel(M); if (RS) await send(await mk(RS, 'sheet', 'A', refSheetOpts()), safeName() + '-reference');
       progress(null);
       const dlg = $('dl').querySelector('.dialog'); dlg.querySelector('h2').textContent = 'Your Google Docs are ready';
       dlg.querySelector('.hint').textContent = 'Each file is now a Google Doc in the department folder, shared with you. Google reflows the text, so pages can differ from the PDF.';
