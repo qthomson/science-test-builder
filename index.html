@@ -407,15 +407,15 @@
   </div>
 </div>
 
-<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610041747"><\/script>');</script>
-<script src="lib/appui.js?v=202610041747" onerror="document.body.classList.remove('boot')"></script>
-<script src="subjects.js?v=202610041747" onerror="window.SUBJECTS = null"></script>
+<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610081712"><\/script>');</script>
+<script src="lib/appui.js?v=202610081712" onerror="document.body.classList.remove('boot')"></script>
+<script src="subjects.js?v=202610081712" onerror="window.SUBJECTS = null"></script>
 <script>
 // Subject chooser. With subjects.js present (the merged site), the data folders are <subject>/bank…; without it, this
 // is a single-subject copy and the folders sit next to the page. The choice is kept in localStorage ('stb.subject');
 // ?subject=physics in the URL overrides it. Later, the shared-library account can carry the preference (see whoAmI).
 (function () {
-  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610041747';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
+  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610081712';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
   // On the Apps Script deployment the server injects SUBJECT_PARAM / HOME_URL / SITE_ROOT (build_appsscript.py); on the website they are absent
   const ROOT = window.SITE_ROOT || '', HOME = window.HOME_URL || location.pathname;
   if (new URLSearchParams(location.search).get('home') || window.FORCE_HOME) { try { localStorage.removeItem('stb.subject'); } catch (e) {} }   // ?home=1: the home page, whatever subject was open last (the signed-in server passes it as FORCE_HOME)
@@ -450,8 +450,8 @@
 <script src="lib/pdf-lib.min.js"></script>
 <script src="lib/fontkit.umd.min.js"></script>
 <script src="lib/fonts.js"></script>
-<script src="lib/textpdf.js?v=202610041747"></script>
-<script src="lib/writer.js?v=202610041747"></script>
+<script src="lib/textpdf.js?v=202610081712"></script>
+<script src="lib/writer.js?v=202610081712"></script>
 <script>
 (async function () {
   if (window.NO_SUBJECT) return;                      // the chooser is showing
@@ -918,7 +918,7 @@
     const c = byId[cid]; if (!c) return;
     const set = new Set(dropped[cid] || []);
     if (set.has(qn)) set.delete(qn); else set.add(qn);
-    if (set.size >= c.items.length) {                   // nothing left: the cluster comes off the worksheet instead
+    if ([...set].filter(x => typeof x === 'number').length >= (c.kind === 'ncl' ? c.questions.length : c.items.length)) {                   // nothing left: the cluster comes off the worksheet instead
       if (!confirm('That is the last question in this cluster. Remove the whole cluster from the worksheet?')) return;
       picked = picked.filter(x => x !== cid); delete dropped[cid];
     } else if (set.size) dropped[cid] = [...set]; else delete dropped[cid];
@@ -930,7 +930,7 @@
     const c = byId[id]; if (!c) return; pvId = id;
     const isNew = c.kind === 'ncl', onSheet = picked.includes(id);
     $('pvTitle').textContent = isNew ? `${c.sample ? 'Sample 2025' : c.session + ' ' + c.year} · ${c.title || ''}` : c.custom ? `Custom · ${c.title || ''}` : `${c.session} ${c.year} · Part ${c.part} · Q${c.group[0]}${c.group[1] !== c.group[0] ? '–' + c.group[1] : ''}`;
-    $('pvHint').textContent = isNew ? `${c.questions.length} questions (${c.n_mc} MC, ${c.n_cr} CR). New-format clusters are inserted whole and reflow with the worksheet.`
+    $('pvHint').textContent = isNew ? `${c.questions.length} questions (${c.n_mc} MC, ${c.n_cr} CR). Untick any passage or question you want to leave out; the rest stays together. Finer edits can be made in Word.`
       : 'Untick any question you want to leave out; the passage and the rest of the cluster stay together.';
     $('pvBody').innerHTML = '<div class="hint">Loading…</div>';
     $('pvInsert').textContent = onSheet ? 'Update' : 'Insert'; $('pvRemove').hidden = !onSheet;
@@ -941,15 +941,17 @@
     let h = '';
     const PW = 6.8, pt = 11.5, nums = { a: c.group[0], b: c.group[1] };
     if (isNew) {
+      const gone = new Set(onSheet ? (dropped[id] || []).map(String) : []);
+      const part = (k, label, body, extra) => `<div class="pq ${gone.has(String(k)) ? 'out' : ''}${extra || ''}" data-q="${k}"><label><input type="checkbox" data-q="${k}" ${gone.has(String(k)) ? '' : 'checked'}>${label}</label><div style="flex:1;min-width:0">${body}</div></div>`;
       const lead = [].concat(t.lead ? [{ t: 'p', runs: t.lead.runs }] : [], t.tables_note ? [{ t: 'p', runs: t.tables_note.runs }] : []);
-      if (lead.length) h += `<div class="pblock"><div class="plabel">Lead-in</div>${opsHTML(ENG.layoutBlocks({ blocks: lead }, PW, pt, { nums }))}</div>`;
-      (t.blocks || []).forEach(bl => {
-        if (bl.t === 'passage') { h += `<div class="pblock"><div class="plabel">Passage</div>${opsHTML(ENG.layoutBlocks({ blocks: bl.blocks }, PW, pt, {}))}</div>`; return; }
+      if (lead.length) h += part('L', 'Lead-in', opsHTML(ENG.layoutBlocks({ blocks: lead }, PW - 0.9, pt, { nums })));
+      (t.blocks || []).forEach((bl, bi) => {
+        if (bl.t === 'passage') { h += part('P' + bi, 'Passage', opsHTML(ENG.layoutBlocks({ blocks: bl.blocks }, PW - 0.9, pt, {}))); return; }
         if (bl.t !== 'q') return;
         const qq = c.questions.find(x => x.q === bl.q);
         const lay = bl.mc ? ENG.layoutBlocks(bl, PW, pt, {}) : ENG.layoutBlocks({ blocks: bl.blocks }, PW, pt, { credit: bl.credit, resp: bl.resp });
         const late = qq && overNow(c).includes(qq);
-        h += `<div class="pblock${late ? ' over1' : ''}"><div class="plabel">Question ${bl.q} · ${bl.mc ? 'multiple choice' : 'constructed response'}${qq && qq.descriptor ? ' · ' + esc(qq.descriptor) : ''}${qq && qq.pe && qq.pe.length ? ' · ' + esc(qq.pe.join(', ')) : ''}${late ? ' · <b>from a later unit: ' + esc(uLabel(qq.unit)) + '</b>' : ''}</div>${opsHTML(lay)}</div>`;
+        h += part(bl.q, 'Q' + bl.q, `<div class="plabel">${bl.mc ? 'multiple choice' : 'constructed response'}${qq && qq.descriptor ? ' · ' + esc(qq.descriptor) : ''}${qq && qq.pe && qq.pe.length ? ' · ' + esc(qq.pe.join(', ')) : ''}${late ? ' · <b>from a later unit: ' + esc(uLabel(qq.unit)) + '</b>' : ''}</div>${opsHTML(lay)}`, late ? ' over1' : '');
       });
     } else {
       const pblocks = [].concat(t.lead ? [{ t: 'p', runs: t.lead.runs }] : [], t.blocks || []);
@@ -966,9 +968,9 @@
   $('preview').addEventListener('click', e => { if (e.target === $('preview')) $('preview').hidden = true; });
   $('pvInsert').onclick = () => {
     const c = byId[pvId]; if (!c) return;
-    if (c.kind === 'cluster') {
-      const out = [...$('pvBody').querySelectorAll('input[data-q]')].filter(cb => !cb.checked).map(cb => Number(cb.dataset.q));
-      if (out.length >= c.items.length) { alert('At least one question has to stay in the cluster.'); return; }
+    if (c.kind === 'cluster' || c.kind === 'ncl') {
+      const out = [...$('pvBody').querySelectorAll('input[data-q]')].filter(cb => !cb.checked).map(cb => /^\d+$/.test(cb.dataset.q) ? Number(cb.dataset.q) : cb.dataset.q);
+      if (out.filter(x => typeof x === 'number').length >= (c.kind === 'ncl' ? c.questions.length : c.items.length)) { alert('At least one question has to stay in the cluster.'); return; }
       if (out.length) dropped[pvId] = out; else delete dropped[pvId];
     }
     if (!picked.includes(pvId)) picked.push(pvId);
@@ -1102,7 +1104,8 @@
     const M = buildModel();
     const title = esc($('oTitle').value);
     const ctlFor = it => `<div class="ctl">${it.textBlock ? '<button data-act="edit" title="Edit this text">&#9998;</button>' : ''}<button data-act="up" ${it.i === 0 ? 'disabled' : ''} title="Move up">&#9650;</button><button data-act="down" ${it.i === picked.length - 1 ? 'disabled' : ''} title="Move down">&#9660;</button>` +
-      ((it.kind === 'cq' || it.crq) && it.c ? `<button data-act="drop" data-q="${it.qnum}" title="Leave this question out (the rest of the cluster stays)">&#10005;</button>` : `<button data-act="del" title="Remove">&#10005;</button>`) + `</div>`;
+      ((it.kind === 'cq' || it.crq) && it.c ? `<button data-act="drop" data-q="${it.qnum}" title="Leave this question out (the rest of the cluster stays)">&#10005;</button>` :
+       it.ncl ? `<button data-act="drop" data-q="${it.qnum != null ? it.qnum : it.b.q}" title="Leave this question out (the rest of the cluster stays)">&#10005;</button>` : `<button data-act="del" title="Remove">&#10005;</button>`) + `</div>`;
     let html = ''; let headShown = false;
     M.pages.forEach((pg, pi) => {
       if (pg.pdf) {
@@ -1214,7 +1217,7 @@
     picked = []; extras = {}; dropped = {};
     decodeURIComponent(location.hash.slice(6)).split(',').forEach(tok => {
       if (tok === 'brk:col' || tok === 'brk:page') { const id = 'brk_' + Math.random().toString(36).slice(2); extras[id] = { kind: 'brk', type: tok.slice(4) }; picked.push(id); }
-      else if (/^drop:/.test(tok)) { const m = tok.match(/^drop:(.+):(\d+)$/); if (m) (dropped[m[1]] = dropped[m[1]] || []).push(Number(m[2])); }
+      else if (/^drop:/.test(tok)) { const m = tok.match(/^drop:(.+):([^:]+)$/); if (m) (dropped[m[1]] = dropped[m[1]] || []).push(/^\d+$/.test(m[2]) ? Number(m[2]) : m[2]); }
       else if (byId[tok]) picked.push(tok);
     });
     persist();
@@ -1393,6 +1396,27 @@
       progress(null); showDownloads(files);
     } catch (err) { console.error(err); progress(null); alert('The Word file could not be made: ' + err.message); }
   };
+  async function exportDocs() {
+    if (!picked.length || !SHARED) return;
+    try { progress('Loading the Word library…'); await ensureDocx(); } catch (e) { progress(null); alert(e.message); return; }
+    try {
+      progress('Loading questions…'); await Promise.all([ensurePaths(neededPaths()), ensureRefTables()]);
+      const M = buildModel(); const d = versionDocs(); const made = [];
+      const send = async (bytes, name) => {
+        progress(`Sending ${name} to Google Docs…`);
+        let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+        made.push(await call('exportDoc', name, btoa(s)));
+      };
+      for (const s of d.sheets) await send(await makeDOCX(M, 'sheet', s.v, s.label), safeName() + s.suffix);
+      for (const k of d.keys) await send(await makeDOCX(M, 'key', k.v, null), safeName() + k.suffix);
+      const RS = refSheetModel(M); if (RS) await send(new Uint8Array(await (await DOCX.makeDOCX(RS, 'sheet', 'A', refSheetOpts())).arrayBuffer()), safeName() + '-reference');
+      progress(null);
+      const list = $('dlList'); list.innerHTML = '<div class="hint" style="margin-bottom:6px">Each file is now a Google Doc in the department folder, shared with you. Google reflows the text, so pages can differ from the PDF.</div>';
+      made.forEach(r => { const row = document.createElement('div'); row.className = 'row'; row.style.justifyContent = 'space-between';
+        row.innerHTML = `<span>${esc(r.name)}</span><a href="${esc(r.url)}" target="_blank" rel="noopener"><button class="small primary">Open in Google Docs</button></a>`; list.appendChild(row); });
+      $('dl').hidden = false;
+    } catch (err) { console.error(err); progress(null); alert('The Google Doc could not be made: ' + err.message); }
+  }
   $('btnPDF').onclick = async () => {
     if (!picked.length) return;
     try {
@@ -1503,7 +1527,7 @@
   if (location.hash.includes('new')) openBuilder(null);
   window.CTB = { buildModel, renderSheet, renderList, makePDF, versionDocs, thumbHTML, openPreview, ensureExam, ENG, TEXT, Q, C, NC, T, NT, SUBJECT, SHARED, SK, OPTS, UORDER, uLabel, uNum, esc, call, opt, setOpt, getOpts,
     reindex, fillExams, updateInfo, bytesOf, urlOf, opsHTML, shrinkImage, examOf, ensurePaths, get byId() { return byId; },
-    persist, progress, download, safeName, setCurrent, applyLoaded, openBuilder, exportFile, toggle, setBank,
+    persist, progress, download, safeName, setCurrent, applyLoaded, openBuilder, exportFile, exportDocs, toggle, setBank,
     get me() { return ME; }, get currentWs() { return currentWs; }, get bankMode() { return bankMode; },
     get picked() { return picked; }, set picked(v) { picked = v; persist(); renderSheet(); },
     get state() { return { picked: picked.slice(), extras: Object.assign({}, extras), dropped: JSON.parse(JSON.stringify(dropped)) }; },
