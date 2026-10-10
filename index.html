@@ -221,7 +221,7 @@
   <button id="btnNew" title="Write your own multiple-choice question and add it to the bank">New question…</button>
   <button id="btnSave" title="Save this worksheet (questions, breaks, inserted pages and settings) so it can be reopened later">Save…</button>
   <button id="btnLoad">Open…</button>
-  <input type="file" id="fileLoad" accept=".json" hidden>
+  <input type="file" id="fileLoad" accept=".json" multiple hidden>
   <button id="btnClear">Clear</button>
   <button id="btnPrint" title="Prints the on-screen worksheet (version A, no key) straight from the browser">Quick Print</button>
   <button id="btnWord" title="Makes editable Word files (.docx): worksheet(s) and key(s). Word reflows the text, so pages differ from the PDF">Make Word</button>
@@ -408,15 +408,15 @@
   </div>
 </div>
 
-<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610101858"><\/script>');</script>
-<script src="lib/appui.js?v=202610101858" onerror="document.body.classList.remove('boot')"></script>
-<script src="subjects.js?v=202610101858" onerror="window.SUBJECTS = null"></script>
+<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610101929"><\/script>');</script>
+<script src="lib/appui.js?v=202610101929" onerror="document.body.classList.remove('boot')"></script>
+<script src="subjects.js?v=202610101929" onerror="window.SUBJECTS = null"></script>
 <script>
 // Subject chooser. With subjects.js present (the merged site), the data folders are <subject>/bank…; without it, this
 // is a single-subject copy and the folders sit next to the page. The choice is kept in localStorage ('stb.subject');
 // ?subject=physics in the URL overrides it. Later, the shared-library account can carry the preference (see whoAmI).
 (function () {
-  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610101858';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
+  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610101929';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
   // On the Apps Script deployment the server injects SUBJECT_PARAM / HOME_URL / SITE_ROOT (build_appsscript.py); on the website they are absent
   const ROOT = window.SITE_ROOT || '', HOME = window.HOME_URL || location.pathname;
   if (new URLSearchParams(location.search).get('home') || window.FORCE_HOME) { try { localStorage.removeItem('stb.subject'); } catch (e) {} }   // ?home=1: the home page, whatever subject was open last (the signed-in server passes it as FORCE_HOME)
@@ -451,8 +451,8 @@
 <script src="lib/pdf-lib.min.js"></script>
 <script src="lib/fontkit.umd.min.js"></script>
 <script src="lib/fonts.js"></script>
-<script src="lib/textpdf.js?v=202610101858"></script>
-<script src="lib/writer.js?v=202610101858"></script>
+<script src="lib/textpdf.js?v=202610101929"></script>
+<script src="lib/writer.js?v=202610101929"></script>
 <script>
 (async function () {
   if (window.NO_SUBJECT) return;                      // the chooser is showing
@@ -1338,8 +1338,30 @@
     a.download = safeName() + '.json'; a.click();
   };
   $('btnLoad').onclick = () => { if (SHARED) openLibrary(); else $('fileLoad').click(); };
+  /** several worksheet files at once (signed in): each is saved straight into the library with the kind and unit it carries */
+  async function importMany(files) {
+    if (!confirm(`Save ${files.length} worksheet files straight into the library, each with the kind and unit it carries? Your current worksheet is not changed.`)) return;
+    let ok = 0; const bad = [];
+    for (const f of files) {
+      try {
+        const d = JSON.parse(await f.text()), ex = d.extras || {}, o = d.options || {};
+        const qs = (d.questions || []).filter(id => byId[id] || ex[id]);
+        if (!qs.length) { bad.push(f.name + ': none of its questions are in this bank'); continue; }
+        progress(`Saving ${f.name}…`);
+        await call('saveWorksheet', { id: null, title: d.title || f.name.replace(/\.json$/i, ''), kind: d.kind || o.oKind || 'worksheet', unit: d.unit != null ? d.unit : (o.oUnitTag || ''),
+                                      questions: qs, extras: ex, dropped: d.dropped || {}, options: o, shared: !!d.shared });
+        ok++;
+      } catch (err) { bad.push(f.name + ': ' + err.message); }
+    }
+    progress(null);
+    alert(`${ok} worksheet${ok === 1 ? '' : 's'} saved to the library.` + (bad.length ? '\n\nNot saved:\n' + bad.join('\n') : ''));
+    if (window.APPUI && APPUI.usageReload) APPUI.usageReload();
+    if (SHARED) openLibrary();
+  }
   $('fileLoad').onchange = e => {
-    const f = e.target.files[0]; if (!f) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length > 1 && SHARED) { importMany(files).finally(() => { e.target.value = ''; }); return; }
+    const f = files[0]; if (!f) return;
     f.text().then(txt => {
       try { const d = JSON.parse(txt);
         extras = d.extras || {}; dropped = d.dropped || {};
