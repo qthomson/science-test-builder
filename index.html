@@ -121,6 +121,10 @@
   .item:hover .ctl { display: flex; }
   .item .ctl button, .page.pdfpage .ctl button { padding: 0 6px; font-size: 11px; line-height: 18px; }
   .rule { position: absolute; border-left: 1px solid #000; width: 0; }
+  .hrule { position: absolute; border-top: 1px solid #000; height: 0; }
+  .page .head.full { display: block; border-bottom: 0; height: 0.78in; padding-bottom: 0; }
+  .page .head.full > div { display: flex; justify-content: space-between; align-items: baseline; }
+  .page .head.full .l2 { margin-top: 6px; }
   .item .slot { position: absolute; display: block; text-align: center; font-family: "LibSerif", "Times New Roman", Times, serif;
                 white-space: nowrap; background: #fff; }
   .item .brk { height: 0.3in; border: 1.5px dashed var(--maroon); border-radius: 8px; color: var(--maroon-deep); background: var(--maroon-tint);
@@ -339,6 +343,7 @@
     <div class="row"><label>Start numbering at</label><input type="number" id="oStart" value="1" min="1"></div>
     <div class="row"><label>Layout</label><select id="oLayout"><option value="default">Default (two columns; questions keep their printed width)</option><option value="wide">Force wide (every question written out across the page)</option></select></div>
     <div class="row"><label>Size</label><select id="oSize"><option value="normal">Normal (11.5 pt, as printed)</option><option value="large">Large (14 pt)</option><option value="enlarged">Large print (16 pt on landscape pages, laid out like the Regents large-type edition)</option></select></div>
+    <div class="row"><input type="checkbox" id="oCompact" checked><label for="oCompact">Compact header: title and the Name / Date / Period line together on one line (off: Name left and Date right on one line, then a bigger title with Period at the right)</label></div>
     <div class="row"><input type="checkbox" id="oFill" checked><label for="oFill">Fill columns: balance the two columns and let a short question move ahead of a wide one so no column is left empty (may renumber slightly)</label></div>
     <div class="row"><label>Missing reference tables</label><select id="oRefTables" title="Tables, graphs and charts that are not on the current reference tables but that a question on this worksheet needs">
       <option value="off">Off</option><option value="start">At the start</option><option value="once">In line, once</option><option value="always">In line, always</option><option value="end">At the end</option><option value="sheet">On separate sheet</option></select></div>
@@ -412,15 +417,15 @@
   </div>
 </div>
 
-<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610110052"><\/script>');</script>
-<script src="lib/appui.js?v=202610110052" onerror="document.body.classList.remove('boot')"></script>
-<script src="subjects.js?v=202610110052" onerror="window.SUBJECTS = null"></script>
+<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610111204"><\/script>');</script>
+<script src="lib/appui.js?v=202610111204" onerror="document.body.classList.remove('boot')"></script>
+<script src="subjects.js?v=202610111204" onerror="window.SUBJECTS = null"></script>
 <script>
 // Subject chooser. With subjects.js present (the merged site), the data folders are <subject>/bank…; without it, this
 // is a single-subject copy and the folders sit next to the page. The choice is kept in localStorage ('stb.subject');
 // ?subject=physics in the URL overrides it. Later, the shared-library account can carry the preference (see whoAmI).
 (function () {
-  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610110052';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
+  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610111204';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
   // On the Apps Script deployment the server injects SUBJECT_PARAM / HOME_URL / SITE_ROOT (build_appsscript.py); on the website they are absent
   const ROOT = window.SITE_ROOT || '', HOME = window.HOME_URL || location.pathname;
   if (new URLSearchParams(location.search).get('home') || window.FORCE_HOME) { try { localStorage.removeItem('stb.subject'); } catch (e) {} }   // ?home=1: the home page, whatever subject was open last (the signed-in server passes it as FORCE_HOME)
@@ -455,8 +460,8 @@
 <script src="lib/pdf-lib.min.js"></script>
 <script src="lib/fontkit.umd.min.js"></script>
 <script src="lib/fonts.js"></script>
-<script src="lib/textpdf.js?v=202610110052"></script>
-<script src="lib/writer.js?v=202610110052"></script>
+<script src="lib/textpdf.js?v=202610111204"></script>
+<script src="lib/writer.js?v=202610111204"></script>
 <script>
 (async function () {
   if (window.NO_SUBJECT) return;                      // the chooser is showing
@@ -1046,7 +1051,7 @@
   const SIZE_PT = { normal: 11.5, large: 14, enlarged: 16 };
 
   // ---------- settings ----------
-  const OPTS = ['oStart', 'oLayout', 'oSize', 'oFill', 'oSpread', 'oPicFix', 'oSmallPara', 'oRefTables', 'oRefConst', 'oBlanks', 'oBlDate', 'oBlPeriod', 'oTeacher', 'oNote', 'oBlank', 'oKey', 'oCRKey', 'oRefBlock', 'oSrc', 'oStdSum', 'oAnsSheet', 'oVersion', 'oKind', 'oUnitTag'];
+  const OPTS = ['oStart', 'oLayout', 'oSize', 'oFill', 'oSpread', 'oPicFix', 'oSmallPara', 'oCompact', 'oRefTables', 'oRefConst', 'oBlanks', 'oBlDate', 'oBlPeriod', 'oTeacher', 'oNote', 'oBlank', 'oKey', 'oCRKey', 'oRefBlock', 'oSrc', 'oStdSum', 'oAnsSheet', 'oVersion', 'oKind', 'oUnitTag'];
   const opt = id => { const el = $(id); return el.type === 'checkbox' ? el.checked : el.value; };
   const setOpt = (id, v) => { const el = $(id); if (!el || v == null) return; if (el.type === 'checkbox') el.checked = !!v; else el.value = v; };
   const getOpts = () => Object.fromEntries(OPTS.map(id => [id, opt(id)]));
@@ -1087,7 +1092,7 @@
                                             reftables: window.REFTABLES || null, refTables: opt('oRefTables') || 'off', refConst: opt('oRefConst') || 'off', reflib: REFLIB, dupDraw: true, picFixed: !!opt('oPicFix'), smallPara: !!opt('oSmallPara') });
     if (!REFLIB && picked.some(id => extras[id] && extras[id].kind === 'reftab')) ensureRefLib().then(() => renderSheet()).catch(() => {});   // a saved worksheet with inserted tables
     const M = ENG.buildModel(items, { cols, pt, start: Number(opt('oStart')) || 1, blank: !!opt('oBlank'), note: !!opt('oNote'), crKey: !!opt('oCRKey'), fill: !!opt('oFill'), spread: !!opt('oSpread'),
-                                      title: $('oTitle').value, teacher: opt('oTeacher') ? $('oTeacherName').value.trim() : '', blanks: { name: !!opt('oBlanks'), date: !!opt('oBlDate'), period: !!opt('oBlPeriod') } });
+                                      title: $('oTitle').value, teacher: opt('oTeacher') ? $('oTeacherName').value.trim() : '', blanks: { name: !!opt('oBlanks'), date: !!opt('oBlDate'), period: !!opt('oBlPeriod') }, compact: !!opt('oCompact') });
     M.scale = pt / 11.5; M.start = Number(opt('oStart')) || 1;
     M.refSheet = items.refSheet || []; M.refOpts = { cols: 1, pt };
     return M;
@@ -1129,11 +1134,17 @@
         headShown = true;
         const teacher = opt('oTeacher') ? $('oTeacherName').value.trim() : '';
         const blanks = ENG.blanksLine({ name: !!opt('oBlanks'), date: !!opt('oBlDate'), period: !!opt('oBlPeriod') });
+        if (M.compact === false) {
+          const bp = ENG.blanksParts({ name: !!opt('oBlanks'), date: !!opt('oBlDate'), period: !!opt('oBlPeriod') });
+          html += `<div class="head full">${bp.name || bp.date ? `<div class="l1"><span class="blanks">${esc(bp.name)}</span><span class="blanks">${esc(bp.date)}</span></div>` : ''}` +
+            `<div class="l2"><span class="title" style="font-size:${M.titlePt || 14}pt">${title}${teacher ? `<span style="font-weight:normal;font-size:11pt"> &nbsp; ${esc(teacher)}</span>` : ''}</span><span class="blanks">${esc(bp.period)}</span></div></div>`;
+        } else
         html += `<div class="head${M.headWrap ? ' wrap' : ''}"><span class="title">${title}${teacher ? `<span style="font-weight:normal;font-size:11pt"> &nbsp; ${esc(teacher)}</span>` : ''}</span>` +
           (blanks ? `<span class="blanks">${esc(blanks).replace(/   /g, ' &nbsp; ')}</span>` : '') + `</div>`;
         if (opt('oNote')) html += `<div class="note">${esc(SUBJECT.renderer.note)}</div>`;
       }
       pg.rules.forEach(r => { html += `<div class="rule" style="left:${r.x.toFixed(3)}in;top:${r.y.toFixed(3)}in;height:${Math.max(0, r.h).toFixed(3)}in"></div>`; });
+      (pg.hrules || []).forEach(r => { html += `<div class="hrule" style="left:${r.x.toFixed(3)}in;top:${r.y.toFixed(3)}in;width:${r.w.toFixed(3)}in"></div>`; });
       const numPt = 11 * Math.max(1, (M.pt || 11.5) / 11.5), numAsc = numPt / 72 * 0.891;
       pg.items.forEach(p => {
         const it = p.item;
