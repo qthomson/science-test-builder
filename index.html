@@ -358,6 +358,8 @@
     <div class="row"><input type="checkbox" id="oBlank"><label for="oBlank">Answer blank in the margin before each multiple-choice number ( ___ 4. ) for quick grading</label></div>
     <div class="row"><input type="checkbox" id="oSmallPara"><label for="oSmallPara">Passage paragraphs at 12 pt when the text size is Large: the "Base your answers…" line and the questions stay large (not for new-format clusters)</label></div>
     <div class="row"><input type="checkbox" id="oPicFix" checked><label for="oPicFix">Keep pictures at their printed size when the text is Large (off: pictures grow with the text)</label></div>
+    <div class="row"><label>Answer lines</label><select id="oLines"><option value="1">1 line</option><option value="2" selected>2 lines</option><option value="3">3 lines</option><option value="4">4 lines</option><option value="5">5 lines</option><option value="6">6 lines</option></select></div>
+    <div class="row"><input type="checkbox" id="oLinesAll"><label for="oLinesAll">Use that count for Regents questions too (otherwise they keep the answer booklet's lines)</label></div>
     <div class="row"><input type="checkbox" id="oSpread"><label for="oSpread">Spread questions down the page: the same amount of blank space after every question, so each gets room to work (off: questions sit together at the top)</label></div>
     <h3>Teacher pages</h3>
     <div class="row"><input type="checkbox" id="oKey" checked><label for="oKey">Answer key (numbered table)</label></div>
@@ -365,7 +367,7 @@
     <div class="row"><input type="checkbox" id="oRefBlock" checked><label for="oRefBlock">Reference-table list on the key (which tables each question needs)</label></div>
     <div class="row"><input type="checkbox" id="oSrc"><label for="oSrc">Show each question's source exam on the key</label></div>
     <div class="row"><input type="checkbox" id="oStdSum"><label for="oStdSum">Standards summary on the key: how many questions sit on each performance expectation (new Regents questions)</label></div>
-    <div class="row"><input type="checkbox" id="oAnsSheet"><label for="oAnsSheet">Student answer sheet: a separate page of numbered blanks for the multiple-choice answers (PDF)</label></div>
+    <div class="row"><label>Answer sheet</label><select id="oAnsSheet"><option value="off">Off</option><option value="end">At the end, after the last question (its own page when it does not fit)</option><option value="page">On its own page</option></select></div>
     <h3>Versions</h3>
     <div class="row"><select id="oVersion">
       <option value="single">One version</option>
@@ -418,15 +420,15 @@
   </div>
 </div>
 
-<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610111224"><\/script>');</script>
-<script src="lib/appui.js?v=202610111224" onerror="document.body.classList.remove('boot')"></script>
-<script src="subjects.js?v=202610111224" onerror="window.SUBJECTS = null"></script>
+<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610121611"><\/script>');</script>
+<script src="lib/appui.js?v=202610121611" onerror="document.body.classList.remove('boot')"></script>
+<script src="subjects.js?v=202610121611" onerror="window.SUBJECTS = null"></script>
 <script>
 // Subject chooser. With subjects.js present (the merged site), the data folders are <subject>/bank…; without it, this
 // is a single-subject copy and the folders sit next to the page. The choice is kept in localStorage ('stb.subject');
 // ?subject=physics in the URL overrides it. Later, the shared-library account can carry the preference (see whoAmI).
 (function () {
-  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610111224';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
+  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610121611';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
   // On the Apps Script deployment the server injects SUBJECT_PARAM / HOME_URL / SITE_ROOT (build_appsscript.py); on the website they are absent
   const ROOT = window.SITE_ROOT || '', HOME = window.HOME_URL || location.pathname;
   if (new URLSearchParams(location.search).get('home') || window.FORCE_HOME) { try { localStorage.removeItem('stb.subject'); } catch (e) {} }   // ?home=1: the home page, whatever subject was open last (the signed-in server passes it as FORCE_HOME)
@@ -461,8 +463,8 @@
 <script src="lib/pdf-lib.min.js"></script>
 <script src="lib/fontkit.umd.min.js"></script>
 <script src="lib/fonts.js"></script>
-<script src="lib/textpdf.js?v=202610111224"></script>
-<script src="lib/writer.js?v=202610111224"></script>
+<script src="lib/textpdf.js?v=202610121611"></script>
+<script src="lib/writer.js?v=202610121611"></script>
 <script>
 (async function () {
   if (window.NO_SUBJECT) return;                      // the chooser is showing
@@ -1052,9 +1054,9 @@
   const SIZE_PT = { normal: 11.5, large: 14, enlarged: 16 };
 
   // ---------- settings ----------
-  const OPTS = ['oStart', 'oLayout', 'oSize', 'oFill', 'oSpread', 'oPicFix', 'oSmallPara', 'oCompact', 'oRefTables', 'oRefConst', 'oBlanks', 'oBlDate', 'oBlPeriod', 'oTeacher', 'oNote', 'oBlank', 'oKey', 'oCRKey', 'oRefBlock', 'oSrc', 'oStdSum', 'oAnsSheet', 'oVersion', 'oKind', 'oUnitTag'];
+  const OPTS = ['oStart', 'oLayout', 'oSize', 'oFill', 'oSpread', 'oPicFix', 'oSmallPara', 'oCompact', 'oLines', 'oLinesAll', 'oRefTables', 'oRefConst', 'oBlanks', 'oBlDate', 'oBlPeriod', 'oTeacher', 'oNote', 'oBlank', 'oKey', 'oCRKey', 'oRefBlock', 'oSrc', 'oStdSum', 'oAnsSheet', 'oVersion', 'oKind', 'oUnitTag'];
   const opt = id => { const el = $(id); return el.type === 'checkbox' ? el.checked : el.value; };
-  const setOpt = (id, v) => { const el = $(id); if (!el || v == null) return; if (el.type === 'checkbox') el.checked = !!v; else el.value = v; };
+  const setOpt = (id, v) => { const el = $(id); if (!el || v == null) return; if (el.type === 'checkbox') el.checked = !!v; else if (el.tagName === 'SELECT' && typeof v === 'boolean') el.value = v ? 'page' : 'off'; else el.value = v; };
   const getOpts = () => Object.fromEntries(OPTS.map(id => [id, opt(id)]));
   const safeName = () => ($('oTitle').value || 'worksheet').replace(/[\\/:*?"<>|]+/g, '').trim() || 'worksheet';
   const versionDocs = () => {
@@ -1090,10 +1092,10 @@
     COLGAP = opt('oBlank') ? 0.55 : 0.3;
     const custom = Object.fromEntries(Q.filter(q => q.kind === 'custom').map(q => [q.id, q]));
     const items = ENG.buildItems(picked, { bank: B, bankNew: BN, text: TEXT, custom, extras, dropped, cols, pt, wide: cols === 1, blank: !!opt('oBlank'), note: !!opt('oNote'),
-                                            reftables: window.REFTABLES || null, refTables: opt('oRefTables') || 'off', refConst: opt('oRefConst') || 'off', reflib: REFLIB, dupDraw: true, picFixed: !!opt('oPicFix'), smallPara: !!opt('oSmallPara') });
+                                            reftables: window.REFTABLES || null, refTables: opt('oRefTables') || 'off', refConst: opt('oRefConst') || 'off', reflib: REFLIB, dupDraw: true, picFixed: !!opt('oPicFix'), smallPara: !!opt('oSmallPara'), defLines: Number(opt('oLines')) || 2, linesAll: !!opt('oLinesAll') });
     if (!REFLIB && picked.some(id => extras[id] && extras[id].kind === 'reftab')) ensureRefLib().then(() => renderSheet()).catch(() => {});   // a saved worksheet with inserted tables
     const M = ENG.buildModel(items, { cols, pt, start: Number(opt('oStart')) || 1, blank: !!opt('oBlank'), note: !!opt('oNote'), crKey: !!opt('oCRKey'), fill: !!opt('oFill'), spread: !!opt('oSpread'),
-                                      title: $('oTitle').value, teacher: opt('oTeacher') ? $('oTeacherName').value.trim() : '', blanks: { name: !!opt('oBlanks'), date: !!opt('oBlDate'), period: !!opt('oBlPeriod') }, compact: !!opt('oCompact') });
+                                      title: $('oTitle').value, teacher: opt('oTeacher') ? $('oTeacherName').value.trim() : '', blanks: { name: !!opt('oBlanks'), date: !!opt('oBlDate'), period: !!opt('oBlPeriod') }, compact: !!opt('oCompact'), ansSheet: opt('oAnsSheet') || 'off' });
     M.scale = pt / 11.5; M.start = Number(opt('oStart')) || 1;
     M.refSheet = items.refSheet || []; M.refOpts = { cols: 1, pt };
     return M;
@@ -1485,7 +1487,7 @@
       for (const s of d.sheets) { progress(`Building ${safeName()}${s.suffix}.pdf…`); files.push([await makePDF(M, 'sheet', s.v, s.label), safeName() + s.suffix + '.pdf']); }
       for (const k of d.keys) { progress(`Building ${safeName()}${k.suffix}.pdf…`); files.push([await makePDF(M, 'key', k.v, null), safeName() + k.suffix + '.pdf']); }
       const RS = refSheetModel(M); if (RS) { progress(`Building ${safeName()}-reference.pdf…`); files.push([await ENG.makePDF(RS, 'sheet', 'A', refSheetOpts()), safeName() + '-reference.pdf']); }
-      if (opt('oAnsSheet')) { progress(`Building ${safeName()}-answer sheet.pdf…`); files.push([await ENG.makePDF(M, 'answers', 'A', pdfOpts(null)), safeName() + '-answer sheet.pdf']); }
+      if (opt('oAnsSheet') === 'pdf') { progress(`Building ${safeName()}-answer sheet.pdf…`); files.push([await ENG.makePDF(M, 'answers', 'A', pdfOpts(null)), safeName() + '-answer sheet.pdf']); }
       progress(null); showDownloads(files);
     } catch (err) { console.error(err); progress(null); alert('The PDF could not be made: ' + err.message); }
   };
