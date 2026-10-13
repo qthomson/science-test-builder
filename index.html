@@ -423,15 +423,15 @@
   </div>
 </div>
 
-<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610121906"><\/script>');</script>
-<script src="lib/appui.js?v=202610121906" onerror="document.body.classList.remove('boot')"></script>
-<script src="subjects.js?v=202610121906" onerror="window.SUBJECTS = null"></script>
+<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610122156"><\/script>');</script>
+<script src="lib/appui.js?v=202610122156" onerror="document.body.classList.remove('boot')"></script>
+<script src="subjects.js?v=202610122156" onerror="window.SUBJECTS = null"></script>
 <script>
 // Subject chooser. With subjects.js present (the merged site), the data folders are <subject>/bank…; without it, this
 // is a single-subject copy and the folders sit next to the page. The choice is kept in localStorage ('stb.subject');
 // ?subject=physics in the URL overrides it. Later, the shared-library account can carry the preference (see whoAmI).
 (function () {
-  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610121906';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
+  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610122156';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
   // On the Apps Script deployment the server injects SUBJECT_PARAM / HOME_URL / SITE_ROOT (build_appsscript.py); on the website they are absent
   const ROOT = window.SITE_ROOT || '', HOME = window.HOME_URL || location.pathname;
   if (new URLSearchParams(location.search).get('home') || window.FORCE_HOME) { try { localStorage.removeItem('stb.subject'); } catch (e) {} }   // ?home=1: the home page, whatever subject was open last (the signed-in server passes it as FORCE_HOME)
@@ -466,8 +466,8 @@
 <script src="lib/pdf-lib.min.js"></script>
 <script src="lib/fontkit.umd.min.js"></script>
 <script src="lib/fonts.js"></script>
-<script src="lib/textpdf.js?v=202610121906"></script>
-<script src="lib/writer.js?v=202610121906"></script>
+<script src="lib/textpdf.js?v=202610122156"></script>
+<script src="lib/writer.js?v=202610122156"></script>
 <script>
 (async function () {
   if (window.NO_SUBJECT) return;                      // the chooser is showing
@@ -1294,8 +1294,8 @@
       return true;
     });
     if (!libRows.length) { $('libList').innerHTML = '<div class="hint">Nothing saved yet. Build a worksheet and use Save….</div>'; return; }
-    $('libList').innerHTML = rows.length ? `<table class="libtable"><tr><th>Title</th><th>Type</th><th>Unit</th><th>Saved by</th><th>Date</th><th>Qs</th><th>Docs</th><th></th></tr>` +
-        rows.map(r => `<tr><td>${esc(r.title)}</td><td>${KIND_NAME[r.kind] || 'Worksheet'}</td><td>${unitTagLabel(r.unit)}</td><td>${esc(short(r.owner))}</td><td>${fmtDate(r.saved)}</td><td>${r.nq}</td><td style="white-space:nowrap">${docLinks(r.docs)}</td><td style="white-space:nowrap"><button class="small primary" data-open="${r.id}">Open</button> <button class="small" data-copy="${r.id}" title="Open as a new copy that saves separately">Copy</button> ${r.mine === false ? '' : `<button class="small" data-hist="${r.id}" title="Earlier saved versions of this worksheet">History</button> `}${r.mine === false ? '' : `<button class="small danger" data-del="${r.id}" title="Remove from the library (older versions stay in the sheet)">&#10005;</button>`}</td></tr>`).join('') + `</table>`
+    $('libList').innerHTML = rows.length ? `<table class="libtable"><tr><th>Title</th><th>Type</th><th>Unit</th><th>Saved by</th><th>Date</th><th>Qs</th><th>Docs</th><th>Shared</th><th></th></tr>` +
+        rows.map(r => `<tr><td>${esc(r.title)}</td><td>${KIND_NAME[r.kind] || 'Worksheet'}</td><td>${unitTagLabel(r.unit)}</td><td>${esc(short(r.owner))}</td><td>${fmtDate(r.saved)}</td><td>${r.nq}</td><td style="white-space:nowrap">${docLinks(r.docs)}</td><td>${r.mine === false ? '' : `<input type="checkbox" data-share="${r.id}"${r.shared ? ' checked' : ''} title="Share this worksheet with the department (its written questions are shared with it)">`}</td><td style="white-space:nowrap"><button class="small primary" data-open="${r.id}">Open</button> <button class="small" data-copy="${r.id}" title="Open as a new copy that saves separately">Copy</button> ${r.mine === false ? '' : `<button class="small" data-hist="${r.id}" title="Earlier saved versions of this worksheet">History</button> `}${r.mine === false ? '' : `<button class="small danger" data-del="${r.id}" title="Remove from the library (older versions stay in the sheet)">&#10005;</button>`}</td></tr>`).join('') + `</table>`
       : '<div class="hint">Nothing matches those filters.</div>';
     wireLibraryButtons(rows);
   }
@@ -1318,6 +1318,15 @@
         try { const d = await call('loadWorksheet', id); applyLoaded(d); setCurrent(b.dataset.copy || d.mine === false ? null : { id: d.id, title: d.title, shared: !!d.shared }); $('lib').hidden = true; if (window.APPUI) APPUI.onLoaded(d); }
         catch (e) { alert('Could not open: ' + e.message); }
         progress(null);
+      });
+      $('libList').querySelectorAll('input[data-share]').forEach(cb => cb.onchange = async () => {     // share or unshare without opening the sheet
+        const r = libRows.find(x => x.id === cb.dataset.share), on = cb.checked; if (!r) return; cb.disabled = true;
+        try {
+          await call('setWorksheetShared', r.id, on); r.shared = on;
+          if (currentWs && currentWs.id === r.id) setCurrent(Object.assign({}, currentWs, { shared: on }));
+          if (window.APPUI && APPUI.usageReload) APPUI.usageReload();
+        } catch (e) { cb.checked = !on; alert('Could not change the sharing: ' + e.message); }
+        cb.disabled = false;
       });
       $('libList').querySelectorAll('button[data-del]').forEach(b => b.onclick = async () => {
         const r = rows.find(x => x.id === b.dataset.del);
