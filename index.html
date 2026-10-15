@@ -423,15 +423,15 @@
   </div>
 </div>
 
-<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610151931"><\/script>');</script>
-<script src="lib/appui.js?v=202610151931" onerror="document.body.classList.remove('boot')"></script>
-<script src="subjects.js?v=202610151931" onerror="window.SUBJECTS = null"></script>
+<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610151955"><\/script>');</script>
+<script src="lib/appui.js?v=202610151955" onerror="document.body.classList.remove('boot')"></script>
+<script src="subjects.js?v=202610151955" onerror="window.SUBJECTS = null"></script>
 <script>
 // Subject chooser. With subjects.js present (the merged site), the data folders are <subject>/bank…; without it, this
 // is a single-subject copy and the folders sit next to the page. The choice is kept in localStorage ('stb.subject');
 // ?subject=physics in the URL overrides it. Later, the shared-library account can carry the preference (see whoAmI).
 (function () {
-  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610151931';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
+  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610151955';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
   // On the Apps Script deployment the server injects SUBJECT_PARAM / HOME_URL / SITE_ROOT (build_appsscript.py); on the website they are absent
   const ROOT = window.SITE_ROOT || '', HOME = window.HOME_URL || location.pathname;
   if (new URLSearchParams(location.search).get('home') || window.FORCE_HOME) { try { localStorage.removeItem('stb.subject'); } catch (e) {} }   // ?home=1: the home page, whatever subject was open last (the signed-in server passes it as FORCE_HOME)
@@ -466,8 +466,8 @@
 <script src="lib/pdf-lib.min.js"></script>
 <script src="lib/fontkit.umd.min.js"></script>
 <script src="lib/fonts.js"></script>
-<script src="lib/textpdf.js?v=202610151931"></script>
-<script src="lib/writer.js?v=202610151931"></script>
+<script src="lib/textpdf.js?v=202610151955"></script>
+<script src="lib/writer.js?v=202610151955"></script>
 <script>
 (async function () {
   if (window.NO_SUBJECT) return;                      // the chooser is showing
@@ -844,7 +844,7 @@
     return true;
   }
   function renderNewList(list) {
-    const rows = NC.filter(nMatches).sort((a, b) => (overNow(a).length - overNow(b).length) || (a.sample - b.sample) || (a.exam < b.exam ? 1 : a.exam > b.exam ? -1 : a.group[0] - b.group[0]));
+    const rows = NC.filter(nMatches).sort((a, b) => (!!b.custom - !!a.custom) || (overNow(a).length - overNow(b).length) || (a.sample - b.sample) || (a.exam < b.exam ? 1 : a.exam > b.exam ? -1 : a.group[0] - b.group[0]));
     $('countText').textContent = `${rows.length} cluster${rows.length === 1 ? '' : 's'} shown`;
     const frag = document.createDocumentFragment();
     rows.forEach(c => {
@@ -854,11 +854,12 @@
       const [a, b] = c.group;
       const badges = c.units.map(u => `<span class="ubadge" title="${uLabel(u)}">U${uNum(u)}</span>`).join(' ') + (c.questions.some(q => !q.unit) ? ` <span class="ubadge none" title="Engineering / evaluation questions not tied to a unit">eng</span>` : '') +
         (over.length ? ` <span class="ubadge over" title="Question ${over[0].q} is from a later unit (${uLabel(over[0].unit)})">Q${over[0].q} later</span>` : '');
-      el.innerHTML = `<div class="meta"><b>${c.sample ? 'Sample 2025' : `${c.session} ${c.year}`}</b> ${c.sample ? `Cluster ${c.id.slice(-1)}` : `Q${a}–${b}`} · ${c.n_mc} MC, ${c.n_cr} CR · ${c.pages.length} page${c.pages.length === 1 ? '' : 's'} <span style="margin-left:auto;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${badges}</span></div>
+      el.innerHTML = `<div class="meta">${c.custom ? `<b>Custom</b> ${c.mine === false ? esc(String(c.owner || '').split('@')[0]) : '<button class="edit" title="Edit this cluster">Edit</button>'} · ${c.n_mc} MC, ${c.n_cr} CR` : `<b>${c.sample ? 'Sample 2025' : `${c.session} ${c.year}`}</b> ${c.sample ? `Cluster ${c.id.slice(-1)}` : `Q${a}–${b}`} · ${c.n_mc} MC, ${c.n_cr} CR · ${c.pages.length} page${c.pages.length === 1 ? '' : 's'}`} <span style="margin-left:auto;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${badges}</span></div>
         <div class="title">${esc(c.title || '')}</div>
         <div class="thumb" data-tid="${c.id}"></div>`;
       el.title = (picked.includes(c.id) ? 'Click to remove this cluster from the worksheet' : 'Click to add this cluster (all of its questions, on its own pages)') + '\n' + c.questions.map(q => `Q${q.q} ${q.mc ? 'MC' : 'CR'}: ${q.descriptor}`).join('\n');
       el.onclick = () => openPreview(c.id);
+      const eb = el.querySelector('.edit'); if (eb) eb.onclick = ev => { ev.stopPropagation(); if (window.WRITER) WRITER.edit(c.id); };
       frag.append(el);
     });
     list.append(frag); lazy(list); if (window.APPUI) APPUI.onList();

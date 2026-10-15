@@ -6,6 +6,29 @@ the topic and what kind of question they want. You hand back **one JSON file** i
 it, sees it in the app's editor, and saves it. Everything in the file must be your own work in the public domain of
 textbook-style science; do not copy a published exam question or a copyrighted figure.
 
+## 0. Before you write anything: ask the teacher
+
+Ask these in one message and wait for the answers (skip any the teacher already gave):
+
+1. **Topic and unit.** What should the question be about? Which unit of the course (the units are listed in the
+   appendix at the end of this file; name the unit, you will put its id in the file)?
+2. **What kind.** One multiple-choice question, one written question, or a cluster (several questions on one
+   scenario)? How many questions, and for a cluster, how many multiple choice and how many written?
+3. **For a cluster: old style or new style?**
+   - *Old style* (the "Old Regents" list): a shared passage or diagram followed by written questions in the style of
+     the old Regents Part B-2 / C, each tagged with a unit and an old question type.
+   - *New style* (the "New clusters" tab): the 2025+ Regents format, a titled real-world scenario with a mix of
+     multiple-choice and written questions, each tagged with a performance expectation (NYSSLS standard) and a
+     new-format type. New style is only available when the appendix lists new-format types.
+4. **Level and credit.** Regents level, honors, or a review sheet? How many credits for each written question (1 or 2
+   is usual)?
+5. **Pictures.** Does the teacher want a diagram, a graph grid or a data table in it, or text only?
+6. **Anything to avoid or include** (a formula, a lab they did, a misconception to target).
+
+Then, **for a new-style cluster only**, before you build the file: propose the performance expectation for each
+question (code and a few words of what it says), ask whether those make sense, and adjust. For old-style questions
+pick the unit and the question type from the appendix yourself; say which you chose when you hand the file back.
+
 ## 1. The file
 
 A UTF-8 text file whose whole content is one JSON object:
@@ -24,6 +47,8 @@ A UTF-8 text file whose whole content is one JSON object:
   asks for several questions at once, hand back either one file per question or one file whose top level is a JSON
   list of such objects; the app imports those in bulk without a preview.
 - Optional `"figScale"`: 10 to 200, a percent applied to every picture in the record (default 100).
+- `"style"`: `"old"` (default) or `"new"` for a new-style cluster (section 0, question 3). Only a cluster can be
+  new style, and only when the appendix lists new-format types.
 
 Nothing else at the top level. Unknown fields are ignored.
 
@@ -88,8 +113,12 @@ Nothing else at the top level. Unknown fields are ignored.
 Use `work` for any calculation, `short` for a single value with a unit, `lines` for explanations, `grid` when the
 student must plot, `picture` when the student draws on a diagram (give the blank diagram as the picture).
 
-Optional on `mc` and `cr`: `"unit"` and `"type"` codes of the app. Leave them out unless the teacher gave you the
-codes; the teacher sets them in the editor.
+Tags on every `mc` and `cr` part, from the appendix at the end of this file:
+
+- Old style: `"unit"` (the unit id) and `"type"` (the old question-type number whose description fits best).
+- New style: `"pe"` (one performance-expectation code, or a list of them) and `"ntype"` (the new-format type number).
+  New-style clusters do not use `unit` or `type`. The lead sentence "Base your answers to questions {a} through {b}…"
+  is added by the app, so the passage starts with the scenario itself (a short title as `heading`, then the story).
 
 ## 3. Pictures
 
@@ -124,6 +153,7 @@ paragraph; inside a `stem` it starts a new line.
 - Every `cr` has `credit`, a `space`, and a `note` with the answer.
 - Every picture has a `data:image/...;base64,` source. Nothing references a file on disk.
 - The passage says `{a}` and `{b}`, not real numbers, if it mentions the question numbers.
+- Every question carries its tags: `unit` and `type` (old style) or `pe` and `ntype` (new style), from the appendix.
 - The whole file is under 4 MB.
 
 ## 7. Complete examples
@@ -151,3 +181,18 @@ A cluster with a calculation and a graph:
     { "t": "mc", "stem": "Which statement best describes the cart's motion?", "figs": [],
       "choices": ["constant speed", "constant acceleration", "decreasing acceleration", "increasing acceleration"], "answer": 2 } ] }
 ```
+
+A new-style cluster (the tags are examples; take real ones from the appendix):
+
+```json
+{ "title": "Roller coaster energy", "style": "new",
+  "parts": [
+    { "t": "passage", "heading": "Roller Coaster Design", "text": "An engineering team is testing a model roller coaster. A 0.50-kilogram car is released from rest at the top of a 2.0-meter hill and rolls through a loop at the bottom.", "figs": [] },
+    { "t": "mc", "stem": "Which quantity is the same at the top of the hill and at the bottom, if friction is ignored?", "figs": [],
+      "choices": ["kinetic energy", "gravitational potential energy", "total mechanical energy", "speed"], "answer": 3, "pe": ["HS-PS3-2"], "ntype": 12 },
+    { "t": "cr", "stem": "Calculate the speed of the car at the bottom of the hill. [Show all work, including the equation and substitution with units.]", "figs": [], "credit": 2,
+      "space": { "kind": "work", "h": 1.5, "label": "Answer:", "len": 1.5, "unit": "m/s" }, "note": "mgh = ½mv²; v = √(2gh) = √(2 × 9.81 m/s² × 2.0 m) = 6.3 m/s. 1 credit for the equation and substitution, 1 for the answer with unit.", "pe": ["HS-PS3-1"], "ntype": 12 } ] }
+```
+
+<!-- APPENDIX -->
+_The app appends this subject's units, question types and standards here when the handoff is downloaded from the app._
