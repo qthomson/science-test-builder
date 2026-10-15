@@ -20,7 +20,9 @@ A UTF-8 text file whose whole content is one JSON object:
 - `title`: a short name for the teacher's list (under 80 characters). Not printed on the test.
 - `parts`: the pieces of the question in print order. One multiple-choice question is one `mc` part. One written
   question is one `cr` part. A cluster is a `passage` part followed by two or more `mc` / `cr` parts (more passages
-  may sit between questions). Keep a file to one question or one cluster; at most 12 parts.
+  may sit between questions). A file normally holds one question or one cluster (at most 12 parts). When the teacher
+  asks for several questions at once, hand back either one file per question or one file whose top level is a JSON
+  list of such objects; the app imports those in bulk without a preview.
 - Optional `"figScale"`: 10 to 200, a percent applied to every picture in the record (default 100).
 
 Nothing else at the top level. Unknown fields are ignored.
@@ -117,7 +119,7 @@ paragraph; inside a `stem` it starts a new line.
 
 ## 6. Checklist before you hand the file back
 
-- It parses as JSON, one object, with `title` and a non-empty `parts` array.
+- It parses as JSON: one object with `title` and a non-empty `parts` array (or a list of such objects for a batch).
 - Every `mc` has four `choices` and an `answer` from 1 to 4 that is really the correct one.
 - Every `cr` has `credit`, a `space`, and a `note` with the answer.
 - Every picture has a `data:image/...;base64,` source. Nothing references a file on disk.
