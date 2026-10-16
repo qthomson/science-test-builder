@@ -27,7 +27,9 @@ Ask these in one message and wait for the answers (skip any the teacher already 
 
 Then, **for a new-style cluster only**, before you build the file: propose the performance expectation for each
 question (code and a few words of what it says), ask whether those make sense, and adjust. For old-style questions
-pick the unit and the question type from the appendix yourself; say which you chose when you hand the file back.
+pick the unit and the question type from the appendix yourself (where the appendix groups types by subtopic, the
+subtopic you mean is set by the type you choose; the teacher may also name a subtopic); say which you chose when you
+hand the file back.
 
 ## 1. The file
 
