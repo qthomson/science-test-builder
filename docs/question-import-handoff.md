@@ -22,7 +22,8 @@ Ask these in one message and wait for the answers (skip any the teacher already 
      new-format type. New style is only available when the appendix lists new-format types.
 4. **Level and credit.** Regents level, honors, or a review sheet? How many credits for each written question (1 or 2
    is usual)?
-5. **Pictures.** Does the teacher want a diagram, a graph grid or a data table in it, or text only?
+5. **Pictures.** Does the teacher want a diagram, a graph grid or a data table in it, or text only? If the teacher
+   gave you a document with figures, say that you will keep every figure and name them in document order (section 3).
 6. **Anything to avoid or include** (a formula, a lab they did, a misconception to target).
 
 Then, **for a new-style cluster only**, before you build the file: propose the performance expectation for each
@@ -124,20 +125,35 @@ Tags on every `mc` and `cr` part, from the appendix at the end of this file:
 
 ## 3. Pictures
 
-A picture is an object `{ "src": "data:image/png;base64,....", "w": 600, "h": 400 }`:
+Every picture is an object with a short name and a label, plus its pixels when you can supply them:
 
-- `src`: a PNG (or JPEG) as a base64 data URL. `w` and `h`: its size in pixels (the app measures them when missing).
-- The app prints at 150 pixels per inch: a 600 × 400 picture prints 4 × 2.67 inches. Keep pictures between 300 and
-  900 pixels wide, under 700 tall, under 1 MB each, white background, black lines at least 2 pixels thick, labels at
-  least 18 pixels tall. Draw them with code (for example Python with Pillow or matplotlib, or SVG rendered to PNG),
-  never a screenshot of someone else's figure.
-- Only draw a picture when the question needs one. A graph grid or a table to fill in needs no picture: use the
-  `grid` or `table` answer space and the app draws it.
+```json
+{ "name": "image1", "about": "ray diagram, concave mirror", "svg": "<svg …>…</svg>" }
+```
+
+- `name`: a file name or a short id (`image1`, `diagram2.png`). `about`: one to five words saying what the picture is.
+  Both are required: the teacher sees the label when a picture is still missing.
+- The pixels, in order of preference:
+  1. **Inline SVG** in `"svg"` for anything you draw yourself (ray diagrams, circuits, free-body diagrams, waves, apparatus):
+     plain SVG text, `viewBox` or width/height in px (96 px = 1 inch), white background, black strokes 2 px or more,
+     text 14 px or larger. The app turns it into a picture. This is the way to go in a chat.
+  2. **A file by name**: give only `name` and `about`. The teacher chooses the image file with the JSON, and the app
+     matches it by name. If the teacher gave you a Word file, call the pictures `image1`, `image2`, … **in the order
+     they appear in the document** and tell the teacher to choose the Word file together with the JSON: the app takes
+     the pictures straight out of it. Never drop a figure the source has, and never rewrite the text to avoid it.
+  3. **Base64** in `"src"` (`data:image/png;base64,…`, PNG or JPEG, with `w` and `h` in pixels) only if you can run code
+     and encode the real file. Never invent base64. Keep each picture under 1 MB, 300 to 900 pixels wide.
+- A graph grid or a table to fill in needs no picture: use the `grid` or `table` answer space. A data table in a passage
+  is typed as a Markdown table (section 4).
+- End your reply with the list of pictures the teacher must supply, one line each: `name — about — where it is in the
+  source`, and tell the teacher the three ways in: choose the files (or the Word file) with the JSON, or paste each one
+  into its labelled slot after the import.
 
 ## 4. Text markup
 
 In any text field: `H_2O` or `x_{10}` for a subscript, `10^3` or `10^{-3}` for a superscript, `*word*` italic,
-`**word**` bold. Use real symbols: `λ`, `Δ`, `°`, `×`, `→`, `−` (minus sign) and `·`. A `\n` inside `text` starts a new
+`**word**` bold. A data table in a passage or a stem is a Markdown table, one row per line, the first row the
+headings: `| Telescope | Mirror diameter |`, then `| --- | --- |`, then `| Hubble | 2.4 m |`. It prints as a ruled table. Use real symbols: `λ`, `Δ`, `°`, `×`, `→`, `−` (minus sign) and `·`. A `\n` inside `text` starts a new
 paragraph; inside a `stem` it starts a new line.
 
 ## 5. Style, as on the Regents
