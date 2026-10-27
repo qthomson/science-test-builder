@@ -120,6 +120,7 @@
   .item .ctl { position: absolute; right: -2px; top: -2px; display: none; gap: 3px; z-index: 2; }
   .item:hover .ctl { display: flex; }
   .item .ctl button, .page.pdfpage .ctl button { padding: 0 6px; font-size: 11px; line-height: 18px; }
+  .ctl button.on { background: var(--maroon); color: #fff; border-color: var(--maroon); }
   .rule { position: absolute; border-left: 1px solid #000; width: 0; }
   .hrule { position: absolute; border-top: 1px solid #000; height: 0; }
   .page .head.full { display: block; border-bottom: 0; height: 0.68in; padding-bottom: 0; }
@@ -423,15 +424,15 @@
   </div>
 </div>
 
-<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610152034"><\/script>');</script>
-<script src="lib/appui.js?v=202610152034" onerror="document.body.classList.remove('boot')"></script>
-<script src="subjects.js?v=202610152034" onerror="window.SUBJECTS = null"></script>
+<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610262027"><\/script>');</script>
+<script src="lib/appui.js?v=202610262027" onerror="document.body.classList.remove('boot')"></script>
+<script src="subjects.js?v=202610262027" onerror="window.SUBJECTS = null"></script>
 <script>
 // Subject chooser. With subjects.js present (the merged site), the data folders are <subject>/bank…; without it, this
 // is a single-subject copy and the folders sit next to the page. The choice is kept in localStorage ('stb.subject');
 // ?subject=physics in the URL overrides it. Later, the shared-library account can carry the preference (see whoAmI).
 (function () {
-  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610152034';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
+  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610262027';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
   // On the Apps Script deployment the server injects SUBJECT_PARAM / HOME_URL / SITE_ROOT (build_appsscript.py); on the website they are absent
   const ROOT = window.SITE_ROOT || '', HOME = window.HOME_URL || location.pathname;
   if (new URLSearchParams(location.search).get('home') || window.FORCE_HOME) { try { localStorage.removeItem('stb.subject'); } catch (e) {} }   // ?home=1: the home page, whatever subject was open last (the signed-in server passes it as FORCE_HOME)
@@ -466,8 +467,8 @@
 <script src="lib/pdf-lib.min.js"></script>
 <script src="lib/fontkit.umd.min.js"></script>
 <script src="lib/fonts.js"></script>
-<script src="lib/textpdf.js?v=202610152034"></script>
-<script src="lib/writer.js?v=202610152034"></script>
+<script src="lib/textpdf.js?v=202610262027"></script>
+<script src="lib/writer.js?v=202610262027"></script>
 <script>
 (async function () {
   if (window.NO_SUBJECT) return;                      // the chooser is showing
@@ -1124,7 +1125,9 @@
     const title = esc($('oTitle').value);
     const ctlFor = it => `<div class="ctl">${it.textBlock ? '<button data-act="edit" title="Edit this text">&#9998;</button>' : ''}<button data-act="up" ${it.i === 0 ? 'disabled' : ''} title="Move up">&#9650;</button><button data-act="down" ${it.i === picked.length - 1 ? 'disabled' : ''} title="Move down">&#9660;</button>` +
       ((it.kind === 'cq' || it.crq) && it.c ? `<button data-act="drop" data-q="${it.qnum}" title="Leave this question out (the rest of the cluster stays)">&#10005;</button>` :
-       it.ncl ? `<button data-act="drop" data-q="${it.qnum != null ? it.qnum : it.b.q}" title="Leave this question out (the rest of the cluster stays)">&#10005;</button>` : `<button data-act="del" title="Remove">&#10005;</button>`) + `</div>`;
+       it.ncl ? `<button data-act="drop" data-q="${it.qnum != null ? it.qnum : it.b.q}" title="Leave this question out (the rest of the cluster stays)">&#10005;</button>` : `<button data-act="del" title="Remove">&#10005;</button>`) +
+      (it.bes ? (it.bes.reason ? `<button disabled title="Picture beside the text: ${esc(it.bes.reason)}">&#8644;</button>`
+                : `<button data-act="beside" data-bid="${esc(it.bes.id)}" class="${it.bes.on ? 'on' : ''}" title="Picture beside the text: ${it.bes.on ? 'ON (click to put it below again)' : 'off'} · beside ${it.bes.save >= 0 ? 'saves' : 'adds'} ${Math.abs(it.bes.save).toFixed(1)} in">&#8644;</button>`) : '') + `</div>`;
     let html = ''; let headShown = false;
     M.pages.forEach((pg, pi) => {
       if (pg.pdf) {
@@ -1219,6 +1222,7 @@
     const holder = b.closest('[data-i]'); const i = Number(holder.dataset.i), act = b.dataset.act;
     if (act === 'edit') { if (window.APPUI) APPUI.editText(picked[i]); return; }
     if (act === 'drop') { toggleDrop(picked[i], Number(b.dataset.q)); return; }
+    if (act === 'beside') { const bs = dropped._beside = dropped._beside || {}; bs[b.dataset.bid] = !b.classList.contains('on'); persist(); renderSheet(); return; }   // picture beside the text, per question, kept with the worksheet
     if (act === 'del') { const id = picked[i]; picked.splice(i, 1); if (extras[id]) delete extras[id]; delete dropped[id]; }
     if (act === 'up' && i > 0) [picked[i - 1], picked[i]] = [picked[i], picked[i - 1]];
     if (act === 'down' && i < picked.length - 1) [picked[i + 1], picked[i]] = [picked[i], picked[i + 1]];

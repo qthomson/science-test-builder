@@ -84,6 +84,9 @@ Nothing else at the top level. Unknown fields are ignored.
 - "Which row…" table choices: give the column headings in `"thead": "Heading A | Heading B"` and each choice as its
   cells, `"Signal A | Signal B"`, with the same number of `|` everywhere.
 - Chemistry equation under the stem: `"eq": "2H_2 + O_2 → 2H_2O"` (optional).
+- `"beside": true` (optional, `mc` and `cr`): print the question's picture at the right with the text and choices
+  wrapping to its left, the way many worksheets save space. Use it when the question has one picture of modest
+  width (under about 3 inches) and text choices; leave it out otherwise. The teacher can switch it per worksheet.
 
 ### `cr` (written response with an answer space)
 
