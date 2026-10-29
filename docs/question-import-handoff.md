@@ -52,6 +52,9 @@ A UTF-8 text file whose whole content is one JSON object:
 - Optional `"figScale"`: 10 to 200, a percent applied to every picture in the record (default 100).
 - `"style"`: `"old"` (default) or `"new"` for a new-style cluster (section 0, question 3). Only a cluster can be
   new style, and only when the appendix lists new-format types.
+- `"width"`: `"half"` makes a single question (one `mc` or `cr` part, no passage) half a page wide so it fits a
+  two-column sheet like the Regents multiple-choice pages. Default: across the page. Use it when the teacher says the
+  question is for a two-column test.
 
 Nothing else at the top level. Unknown fields are ignored.
 
