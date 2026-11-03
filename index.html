@@ -364,6 +364,7 @@
     <div class="row"><label>Answer lines</label><select id="oLines"><option value="1">1 line</option><option value="2" selected>2 lines</option><option value="3">3 lines</option><option value="4">4 lines</option><option value="5">5 lines</option><option value="6">6 lines</option></select></div>
     <div class="row"><input type="checkbox" id="oLinesAll"><label for="oLinesAll">Use that count for Regents questions too (otherwise they keep the answer booklet's lines)</label></div>
     <div class="row"><input type="checkbox" id="oDblNum"><label for="oDblNum">Number two-point questions Regents-style with two numbers (52–53); off: every question gets one number</label></div>
+    <div class="row"><input type="checkbox" id="oVerNum"><label for="oVerNum">Print the save version (v1, v2, …) small in the top-right corner of the test, the answer sheet and the answer key, so a key is never matched with an older version. Every save in the library counts one up.</label></div>
     <div class="row"><input type="checkbox" id="oSpread"><label for="oSpread">Spread questions down the page: the same amount of blank space after every question, so each gets room to work (off: questions sit together at the top)</label></div>
     <h3>Teacher pages</h3>
     <div class="row"><input type="checkbox" id="oKey" checked><label for="oKey">Answer key (numbered table)</label></div>
@@ -424,15 +425,15 @@
   </div>
 </div>
 
-<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202610282045"><\/script>');</script>
-<script src="lib/appui.js?v=202610282045" onerror="document.body.classList.remove('boot')"></script>
-<script src="subjects.js?v=202610282045" onerror="window.SUBJECTS = null"></script>
+<script>if (/[?&]mock=1/.test(location.search)) document.write('<script src="lib/mockbackend.js?v=202611031820"><\/script>');</script>
+<script src="lib/appui.js?v=202611031820" onerror="document.body.classList.remove('boot')"></script>
+<script src="subjects.js?v=202611031820" onerror="window.SUBJECTS = null"></script>
 <script>
 // Subject chooser. With subjects.js present (the merged site), the data folders are <subject>/bank…; without it, this
 // is a single-subject copy and the folders sit next to the page. The choice is kept in localStorage ('stb.subject');
 // ?subject=physics in the URL overrides it. Later, the shared-library account can carry the preference (see whoAmI).
 (function () {
-  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202610282045';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
+  const S = window.SUBJECTS || null; const BUILD = window.BUILD = '202611031820';   // stamped by patch_app.py: data files load with ?v=BUILD so a rebuilt bank is never served from cache
   // On the Apps Script deployment the server injects SUBJECT_PARAM / HOME_URL / SITE_ROOT (build_appsscript.py); on the website they are absent
   const ROOT = window.SITE_ROOT || '', HOME = window.HOME_URL || location.pathname;
   if (new URLSearchParams(location.search).get('home') || window.FORCE_HOME) { try { localStorage.removeItem('stb.subject'); } catch (e) {} }   // ?home=1: the home page, whatever subject was open last (the signed-in server passes it as FORCE_HOME)
@@ -467,8 +468,8 @@
 <script src="lib/pdf-lib.min.js"></script>
 <script src="lib/fontkit.umd.min.js"></script>
 <script src="lib/fonts.js"></script>
-<script src="lib/textpdf.js?v=202610282045"></script>
-<script src="lib/writer.js?v=202610282045"></script>
+<script src="lib/textpdf.js?v=202611031820"></script>
+<script src="lib/writer.js?v=202611031820"></script>
 <script>
 (async function () {
   if (window.NO_SUBJECT) return;                      // the chooser is showing
@@ -1060,7 +1061,7 @@
   const SIZE_PT = { normal: 11.5, large: 14, enlarged: 16 };
 
   // ---------- settings ----------
-  const OPTS = ['oStart', 'oLayout', 'oSize', 'oFill', 'oPageNums', 'oSpread', 'oPicScale', 'oWork', 'oSmallPara', 'oCompact', 'oLines', 'oLinesAll', 'oDblNum', 'oRefTables', 'oRefConst', 'oBlanks', 'oBlDate', 'oBlPeriod', 'oTeacher', 'oNote', 'oBlank', 'oKey', 'oCRKey', 'oRefBlock', 'oSrc', 'oStdSum', 'oAnsSheet', 'oVersion', 'oKind', 'oUnitTag'];
+  const OPTS = ['oStart', 'oLayout', 'oSize', 'oFill', 'oPageNums', 'oSpread', 'oPicScale', 'oWork', 'oSmallPara', 'oCompact', 'oLines', 'oLinesAll', 'oDblNum', 'oVerNum', 'oRefTables', 'oRefConst', 'oBlanks', 'oBlDate', 'oBlPeriod', 'oTeacher', 'oNote', 'oBlank', 'oKey', 'oCRKey', 'oRefBlock', 'oSrc', 'oStdSum', 'oAnsSheet', 'oVersion', 'oKind', 'oUnitTag'];
   const opt = id => { const el = $(id); return el.type === 'checkbox' ? el.checked : el.value; };
   const setOpt = (id, v) => { const el = $(id); if (!el || v == null) return; if (el.type === 'checkbox') el.checked = !!v; else if (el.tagName === 'SELECT' && typeof v === 'boolean') el.value = v ? 'page' : 'off'; else el.value = v; };
   const getOpts = () => Object.fromEntries(OPTS.map(id => [id, opt(id)]));
@@ -1211,7 +1212,7 @@
     });
     wrap.innerHTML = html;
     const np = M.pages.filter(pg => !pg.ansHead).length, na = M.pages.length - np;
-    $('status').textContent = `${M.nq} question${M.nq === 1 ? '' : 's'} · ${np} page${np === 1 ? '' : 's'}` + (na ? ` + ${na}-page answer sheet` : '') + (opt('oVersion') !== 'single' ? ' · ' + { decoy: 'Forms A/B (same order)', ab: 'versions A and B', abnolabel: 'versions A and B (unlabeled)' }[opt('oVersion')] : '');
+    $('status').textContent = `${M.nq} question${M.nq === 1 ? '' : 's'} · ${np} page${np === 1 ? '' : 's'}` + (na ? ` + ${na}-page answer sheet` : '') + (opt('oVersion') !== 'single' ? ' · ' + { decoy: 'Forms A/B (same order)', ab: 'versions A and B', abnolabel: 'versions A and B (unlabeled)' }[opt('oVersion')] : '') + (currentWs && currentWs.ver ? ` · v${currentWs.ver}` : '');
     const lines = refLines(M.tabs); const tb = $('tables');
     if (lines.length) { tb.style.display = 'block'; tb.innerHTML = `<b>Reference tables needed:</b> ` + lines.map(l => `${l.old ? '<b>' : ''}${esc(l.label)}${l.old ? '</b>' : ''} (${l.nums.join(', ')})`).join(' · ') + ` &nbsp;<span style="opacity:.8">bold = only on the 2011 edition</span>`; }
     else tb.style.display = 'none';
@@ -1275,7 +1276,7 @@
     progress('Saving…');
     try {
       const r = await call('saveWorksheet', { id: asNew ? null : (currentWs && currentWs.id) || null, title, kind: $('oKind').value, unit: $('oUnitTag').value, questions: picked, extras, dropped, options: getOpts(), shared: $('svShare').checked });
-      setCurrent({ id: r.id, title, shared: $('svShare').checked }); persist(); $('savedlg').hidden = true; progress('Saved.'); setTimeout(() => progress(null), 2000);
+      setCurrent({ id: r.id, title, shared: $('svShare').checked, ver: r.ver || 0 }); persist(); renderSheet(); $('savedlg').hidden = true; progress('Saved.'); setTimeout(() => progress(null), 2000);
       if (window.APPUI) APPUI.onSaved(r);
     } catch (e) { progress(null); alert('Could not save: ' + e.message); }
   }
@@ -1325,7 +1326,7 @@
       $('libList').querySelectorAll('button[data-hist]').forEach(b => b.onclick = () => { if (window.APPUI) APPUI.versions(b.dataset.hist, b); });
       $('libList').querySelectorAll('button[data-open],button[data-copy]').forEach(b => b.onclick = async () => {
         const id = b.dataset.open || b.dataset.copy; progress('Opening…');
-        try { const d = await call('loadWorksheet', id); applyLoaded(d); setCurrent(b.dataset.copy || d.mine === false ? null : { id: d.id, title: d.title, shared: !!d.shared }); $('lib').hidden = true; if (window.APPUI) APPUI.onLoaded(d); }
+        try { const d = await call('loadWorksheet', id); applyLoaded(d); setCurrent(b.dataset.copy || d.mine === false ? null : { id: d.id, title: d.title, shared: !!d.shared, ver: d.ver || 0 }); $('lib').hidden = true; if (window.APPUI) APPUI.onLoaded(d); }
         catch (e) { alert('Could not open: ' + e.message); }
         progress(null);
       });
@@ -1449,7 +1450,9 @@
   }
   $('dlClose').onclick = () => { $('dl').hidden = true; };
   $('dl').addEventListener('click', e => { if (e.target === $('dl')) $('dl').hidden = true; });
-  const pdfOpts = label => ({ title: $('oTitle').value, blanks: { name: !!opt('oBlanks'), date: !!opt('oBlDate'), period: !!opt('oBlPeriod') }, teacher: opt('oTeacher') ? $('oTeacherName').value.trim() : '', note: !!opt('oNote'), key: !!opt('oKey'), crKey: !!opt('oCRKey'), refBlock: !!opt('oRefBlock'), src: !!opt('oSrc'), label });
+  // the save version printed in the corner (Niche setting): v3; "v3 (edited)" when the sheet changed since that save; "unsaved" when it was never saved
+  const verTag = () => !opt('oVerNum') ? '' : !(currentWs && currentWs.ver) ? 'unsaved' : 'v' + currentWs.ver + (window.APPUI && APPUI.isDirty && APPUI.isDirty() ? ' (edited)' : '');
+  const pdfOpts = label => ({ title: $('oTitle').value, blanks: { name: !!opt('oBlanks'), date: !!opt('oBlDate'), period: !!opt('oBlPeriod') }, teacher: opt('oTeacher') ? $('oTeacherName').value.trim() : '', note: !!opt('oNote'), key: !!opt('oKey'), crKey: !!opt('oCRKey'), refBlock: !!opt('oRefBlock'), src: !!opt('oSrc'), label, ver: verTag() });
   /** performance expectations of the questions on the worksheet: { rows: [{pe, nums}], none: how many questions carry none } */
   function stdSummary(M) {
     const by = {}; let none = 0;
